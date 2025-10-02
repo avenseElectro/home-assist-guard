@@ -82,7 +82,7 @@ class HomeSafeConnector:
             return None
     
     def download_snapshot(self, snapshot_slug):
-        """Download snapshot file from Supervisor"""
+        """Download snapshot file from Supervisor (returns stream)"""
         logger.info(f"Downloading snapshot: {snapshot_slug}")
         
         try:
@@ -93,14 +93,14 @@ class HomeSafeConnector:
                 timeout=300
             )
             response.raise_for_status()
-            return response.content
+            return response  # Return stream response, not content
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to download snapshot: {e}")
             return None
     
-    def upload_to_homesafe(self, snapshot_slug, snapshot_data):
-        """Upload snapshot to HomeSafe Backup SaaS"""
+    def upload_to_homesafe(self, snapshot_slug, snapshot_stream):
+        """Upload snapshot to HomeSafe Backup SaaS (streaming)"""
         logger.info(f"Uploading snapshot to HomeSafe: {snapshot_slug}")
         
         # Get snapshot info for metadata
@@ -113,9 +113,9 @@ class HomeSafeConnector:
         filename = f"{snapshot_slug}.tar"
         
         try:
-            # Prepare multipart form data
+            # Prepare multipart form data with stream
             files = {
-                'file': (filename, snapshot_data, 'application/x-tar')
+                'file': (filename, snapshot_stream.raw, 'application/x-tar')
             }
             data = {
                 'ha_version': ha_version
@@ -156,16 +156,16 @@ class HomeSafeConnector:
             logger.error("Backup workflow failed: Could not create snapshot")
             return False
         
-        # Step 2: Download snapshot
-        snapshot_data = self.download_snapshot(snapshot_slug)
-        if not snapshot_data:
+        # Step 2: Download snapshot (returns stream)
+        snapshot_stream = self.download_snapshot(snapshot_slug)
+        if not snapshot_stream:
             logger.error("Backup workflow failed: Could not download snapshot")
             return False
         
-        logger.info(f"Snapshot size: {len(snapshot_data) / (1024*1024):.2f} MB")
+        logger.info("Snapshot downloaded (streaming mode - minimal memory usage)")
         
-        # Step 3: Upload to HomeSafe
-        success = self.upload_to_homesafe(snapshot_slug, snapshot_data)
+        # Step 3: Upload to HomeSafe (streaming)
+        success = self.upload_to_homesafe(snapshot_slug, snapshot_stream)
         
         elapsed_time = time.time() - start_time
         logger.info(f"=== Backup workflow completed in {elapsed_time:.2f}s - {'SUCCESS' if success else 'FAILED'} ===")
