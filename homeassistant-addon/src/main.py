@@ -46,7 +46,7 @@ class HomeSafeConnector:
         
         try:
             response = requests.post(
-                f'{self.supervisor_url}/snapshots/new/full',
+                f'{self.supervisor_url}/backups/new/full',
                 headers=self._get_supervisor_headers(),
                 json={'name': f'HomeSafe-{datetime.now().strftime("%Y%m%d-%H%M%S")}'},
                 timeout=300
@@ -71,7 +71,7 @@ class HomeSafeConnector:
         """Get information about a specific snapshot"""
         try:
             response = requests.get(
-                f'{self.supervisor_url}/snapshots/{snapshot_slug}/info',
+                f'{self.supervisor_url}/backups/{snapshot_slug}/info',
                 headers=self._get_supervisor_headers(),
                 timeout=30
             )
@@ -87,7 +87,7 @@ class HomeSafeConnector:
         
         try:
             response = requests.get(
-                f'{self.supervisor_url}/snapshots/{snapshot_slug}/download',
+                f'{self.supervisor_url}/backups/{snapshot_slug}/download',
                 headers=self._get_supervisor_headers(),
                 stream=True,
                 timeout=300
@@ -176,7 +176,7 @@ class HomeSafeConnector:
         """Remove old local snapshots to save space"""
         try:
             response = requests.get(
-                f'{self.supervisor_url}/snapshots',
+                f'{self.supervisor_url}/backups',
                 headers=self._get_supervisor_headers(),
                 timeout=30
             )
@@ -196,7 +196,7 @@ class HomeSafeConnector:
                     slug = snapshot.get('slug')
                     logger.info(f"Deleting old local snapshot: {slug}")
                     requests.post(
-                        f'{self.supervisor_url}/snapshots/{slug}/remove',
+                        f'{self.supervisor_url}/backups/{slug}/remove',
                         headers=self._get_supervisor_headers(),
                         timeout=30
                     )
