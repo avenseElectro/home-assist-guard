@@ -1,0 +1,29 @@
+name: HomeSafe Connector
+version: "1.0.0"
+slug: homesafe_connector
+description: Automated Home Assistant backup integration with HomeSafe Backup SaaS
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+init: false
+options:
+  api_url: "https://iagsshcczgmjdrdweirb.supabase.co/functions/v1"
+  api_key: ""
+  auto_backup_enabled: true
+  backup_time: "03:00"
+  retention_days: 7
+schema:
+  api_url: str
+  api_key: str
+  auto_backup_enabled: bool
+  backup_time: str
+  retention_days: int(1,365)
+startup: services
+boot: auto
+hassio_api: true
+hassio_role: admin
+ports: {}
+ports_description: {}
