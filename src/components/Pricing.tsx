@@ -1,0 +1,115 @@
+import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
+import { Link } from "react-router-dom";
+
+const plans = [
+  {
+    name: "Free",
+    price: "0€",
+    period: "para sempre",
+    description: "Ideal para testar",
+    features: [
+      "1 backup por semana",
+      "Retenção de 7 dias",
+      "100 MB de armazenamento",
+      "1 instância do Home Assistant",
+      "Suporte por email"
+    ],
+    cta: "Começar Grátis",
+    popular: false
+  },
+  {
+    name: "Pro",
+    price: "5€",
+    period: "/mês",
+    description: "Para entusiastas",
+    features: [
+      "Backups diários automáticos",
+      "Retenção de 90 dias",
+      "5 GB de armazenamento",
+      "2 instâncias do Home Assistant",
+      "Suporte prioritário",
+      "Webhook notifications"
+    ],
+    cta: "Subscrever Pro",
+    popular: true
+  },
+  {
+    name: "Business",
+    price: "15€",
+    period: "/mês",
+    description: "Para profissionais",
+    features: [
+      "Backups ilimitados",
+      "Retenção de 180 dias",
+      "20 GB de armazenamento",
+      "5 instâncias do Home Assistant",
+      "Suporte dedicado 24/7",
+      "API completa",
+      "Relatórios e auditoria"
+    ],
+    cta: "Subscrever Business",
+    popular: false
+  }
+];
+
+export function Pricing() {
+  return (
+    <section className="py-24 px-4 gradient-subtle">
+      <div className="container mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl mb-4">Planos Simples e Transparentes</h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Escolha o plano perfeito para as suas necessidades
+          </p>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {plans.map((plan, index) => (
+            <div 
+              key={index}
+              className={`bg-card rounded-xl p-8 shadow-card hover:shadow-hover transition-smooth ${
+                plan.popular ? 'border-2 border-primary relative' : ''
+              }`}
+            >
+              {plan.popular && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <span className="gradient-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">
+                    Mais Popular
+                  </span>
+                </div>
+              )}
+              
+              <div className="mb-6">
+                <h3 className="text-2xl mb-2">{plan.name}</h3>
+                <p className="text-muted-foreground text-sm mb-4">{plan.description}</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-5xl font-bold">{plan.price}</span>
+                  <span className="text-muted-foreground">{plan.period}</span>
+                </div>
+              </div>
+              
+              <ul className="space-y-3 mb-8">
+                {plan.features.map((feature, fIndex) => (
+                  <li key={fIndex} className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                    <span className="text-sm">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              <Button 
+                asChild 
+                variant={plan.popular ? "hero" : "outline"}
+                className="w-full"
+                size="lg"
+              >
+                <Link to="/auth">{plan.cta}</Link>
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
