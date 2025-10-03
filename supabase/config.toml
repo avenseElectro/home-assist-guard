@@ -1,1 +1,4 @@
 project_id = "iagsshcczgmjdrdweirb"
+
+[functions.backup-upload]
+verify_jwt = false
