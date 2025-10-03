@@ -7,11 +7,14 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('[backup-delete] Request received:', req.method, req.url);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('[backup-delete] Creating Supabase client');
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -19,7 +22,10 @@ serve(async (req) => {
 
     // Get authenticated user
     const authHeader = req.headers.get('Authorization');
+    console.log('[backup-delete] Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.error('[backup-delete] Missing authorization header');
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -30,11 +36,14 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError || !user) {
+      console.error('[backup-delete] Auth error:', userError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('[backup-delete] User authenticated:', user.id);
 
     // Get backup ID from URL
     const url = new URL(req.url);

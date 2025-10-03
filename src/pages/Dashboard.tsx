@@ -91,31 +91,27 @@ export default function Dashboard() {
     if (!confirm("Tem certeza que deseja eliminar este backup?")) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Sessão expirada");
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/backup-delete/${backupId}`,
+      toast.loading("A eliminar backup...");
+      
+      const { data, error } = await supabase.functions.invoke(
+        `backup-delete/${backupId}`,
         {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+          method: "DELETE"
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Falha ao eliminar backup");
+      if (error) {
+        console.error("Delete error:", error);
+        throw error;
       }
 
+      toast.dismiss();
       toast.success("Backup eliminado com sucesso");
-      fetchData();
+      await fetchData();
     } catch (error) {
+      toast.dismiss();
       console.error("Error deleting backup:", error);
-      toast.error("Erro ao eliminar backup");
+      toast.error("Erro ao eliminar backup. Tente novamente.");
     }
   };
 
