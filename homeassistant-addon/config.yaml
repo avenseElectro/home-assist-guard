@@ -9,6 +9,7 @@ arch:
   - armv7
   - i386
 init: false
+memory_limit: 4096
 options:
   api_url: "https://iagsshcczgmjdrdweirb.supabase.co/functions/v1"
   api_key: ""

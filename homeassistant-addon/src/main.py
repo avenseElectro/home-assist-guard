@@ -385,8 +385,8 @@ class HomeSafeConnector:
             return False
     
     def upload_to_baserow(self, snapshot_slug, snapshot_stream):
-        """Upload snapshot to Baserow using their REST API"""
-        logger.info(f"Uploading snapshot to Baserow: {snapshot_slug}")
+        """Upload snapshot to Baserow using chunked streaming to minimize memory usage"""
+        logger.info(f"Uploading snapshot to Baserow (chunked mode): {snapshot_slug}")
         
         # Get snapshot info for metadata
         snapshot_info = self.get_snapshot_info(snapshot_slug)
@@ -434,26 +434,75 @@ class HomeSafeConnector:
             baserow_table_id = init_data['baserow_table_id']
             logger.info(f"Upload initialized. Backup ID: {backup_id}, Baserow Row ID: {row_id}")
             
-            # Step 2: Upload file directly to Baserow
-            logger.info("Step 2/3: Uploading file to Baserow (this may take several minutes)...")
+            # Step 2: Upload file directly to Baserow using chunked streaming
+            logger.info("Step 2/3: Uploading file to Baserow in chunks (this may take several minutes)...")
             
-            # Prepare multipart/form-data for Baserow
-            files = {
-                'file': ('backup.tar', snapshot_stream.raw, 'application/x-tar')
-            }
-            data = {
-                'status': 'completed'
-            }
-            
-            upload_response = requests.patch(
-                f'{baserow_url}/api/database/rows/table/{baserow_table_id}/{row_id}/',
-                headers={
-                    'Authorization': f'Token {self.baserow_api_token}'
-                },
-                files=files,
-                data=data,
-                timeout=3600  # 1 hour timeout for large files
-            )
+            try:
+                from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
+                
+                # Define chunk size for reading (50MB chunks to minimize memory)
+                CHUNK_SIZE = 50 * 1024 * 1024  # 50MB
+                
+                # Create a generator that reads the file in chunks
+                def file_chunk_generator():
+                    bytes_read = 0
+                    while True:
+                        chunk = snapshot_stream.raw.read(CHUNK_SIZE)
+                        if not chunk:
+                            break
+                        bytes_read += len(chunk)
+                        yield chunk
+                
+                # Prepare multipart encoder with chunked file reading
+                encoder = MultipartEncoder(
+                    fields={
+                        'file': ('backup.tar', file_chunk_generator(), 'application/x-tar'),
+                        'status': 'completed'
+                    }
+                )
+                
+                # Add progress monitoring
+                last_logged_progress = 0
+                def progress_callback(monitor):
+                    nonlocal last_logged_progress
+                    if file_size > 0:
+                        progress = (monitor.bytes_read / file_size) * 100
+                        # Log every 10% to avoid spam
+                        if int(progress) >= last_logged_progress + 10:
+                            logger.info(f"Upload progress: {progress:.1f}%")
+                            last_logged_progress = int(progress)
+                
+                monitor = MultipartEncoderMonitor(encoder, progress_callback)
+                
+                upload_response = requests.patch(
+                    f'{baserow_url}/api/database/rows/table/{baserow_table_id}/{row_id}/',
+                    headers={
+                        'Authorization': f'Token {self.baserow_api_token}',
+                        'Content-Type': monitor.content_type
+                    },
+                    data=monitor,
+                    timeout=3600  # 1 hour timeout for large files
+                )
+                
+            except ImportError:
+                # Fallback to non-chunked upload if requests-toolbelt is not available
+                logger.warning("requests-toolbelt not available, using non-chunked upload (higher memory usage)")
+                files = {
+                    'file': ('backup.tar', snapshot_stream.raw, 'application/x-tar')
+                }
+                data = {
+                    'status': 'completed'
+                }
+                
+                upload_response = requests.patch(
+                    f'{baserow_url}/api/database/rows/table/{baserow_table_id}/{row_id}/',
+                    headers={
+                        'Authorization': f'Token {self.baserow_api_token}'
+                    },
+                    files=files,
+                    data=data,
+                    timeout=3600
+                )
             
             if not upload_response.ok:
                 logger.error(f"Baserow upload failed: {upload_response.status_code} - {upload_response.text}")
