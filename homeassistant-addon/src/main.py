@@ -45,7 +45,15 @@ class HomeSafeConnector:
         logger.info("Creating new snapshot...")
         
         try:
-            payload = {'name': f'HomeSafe-{datetime.now().strftime("%Y%m%d-%H%M%S")}'}
+            # Payload with optional parameters for full backup
+            payload = {
+                'name': f'HomeSafe-{datetime.now().strftime("%Y%m%d-%H%M%S")}',
+                'compressed': True
+            }
+            
+            logger.info(f"Sending backup request to: {self.supervisor_url}/backups/new/full")
+            logger.info(f"Payload: {payload}")
+            logger.info(f"Token present: {bool(self.supervisor_token)}")
             
             response = requests.post(
                 f'{self.supervisor_url}/backups/new/full',
@@ -57,11 +65,13 @@ class HomeSafeConnector:
             # Log detailed error info
             if not response.ok:
                 logger.error(f"Snapshot creation failed with status {response.status_code}")
+                logger.error(f"Response headers: {dict(response.headers)}")
                 logger.error(f"Response body: {response.text}")
             
             response.raise_for_status()
             
             snapshot_data = response.json()
+            logger.info(f"Snapshot API response: {snapshot_data}")
             
             # API returns slug directly in response (not nested in 'data')
             snapshot_slug = snapshot_data.get('slug') or snapshot_data.get('data', {}).get('slug')
@@ -75,6 +85,7 @@ class HomeSafeConnector:
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to create snapshot: {e}")
+            logger.error(f"Exception type: {type(e).__name__}")
             return None
     
     def get_snapshot_info(self, snapshot_slug):
