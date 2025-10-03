@@ -41,7 +41,7 @@ class HomeSafeConnector:
         }
     
     def create_snapshot(self):
-        """Create a new snapshot using Home Assistant Supervisor API"""
+        """Create a new snapshot using Home Assistant Supervisor API with async job polling"""
         logger.info("Creating new snapshot...")
         
         try:
@@ -51,41 +51,97 @@ class HomeSafeConnector:
                 'compressed': True
             }
             
-            logger.info(f"Sending backup request to: {self.supervisor_url}/backups/new/full")
-            logger.info(f"Payload: {payload}")
-            logger.info(f"Token present: {bool(self.supervisor_token)}")
+            logger.info(f"Starting backup job at: {self.supervisor_url}/backups/new/full")
             
+            # Start the backup job (returns immediately with job_id)
             response = requests.post(
                 f'{self.supervisor_url}/backups/new/full',
                 headers=self._get_supervisor_headers(),
                 json=payload,
-                timeout=600
+                timeout=30  # Short timeout for starting the job
             )
             
-            # Log detailed error info
             if not response.ok:
-                logger.error(f"Snapshot creation failed with status {response.status_code}")
-                logger.error(f"Response headers: {dict(response.headers)}")
-                logger.error(f"Response body: {response.text}")
+                logger.error(f"Failed to start backup job with status {response.status_code}")
+                logger.error(f"Response: {response.text}")
+                response.raise_for_status()
             
-            response.raise_for_status()
+            job_data = response.json()
+            logger.info(f"Backup job response: {job_data}")
             
-            snapshot_data = response.json()
-            logger.info(f"Snapshot API response: {snapshot_data}")
+            # Extract job_id from response
+            job_id = None
+            if job_data.get('result') == 'ok':
+                job_id = job_data.get('data', {}).get('job_id')
             
-            # API returns slug directly in response (not nested in 'data')
-            snapshot_slug = snapshot_data.get('slug') or snapshot_data.get('data', {}).get('slug')
+            if not job_id:
+                # Fallback: try to extract slug directly (older API versions)
+                snapshot_slug = job_data.get('data', {}).get('slug')
+                if snapshot_slug:
+                    logger.info(f"Snapshot created successfully (synchronous): {snapshot_slug}")
+                    return snapshot_slug
+                else:
+                    logger.error(f"Failed to get job_id or slug from response: {job_data}")
+                    return None
             
-            if not snapshot_slug:
-                logger.error(f"Failed to get snapshot slug from response: {snapshot_data}")
-                return None
+            logger.info(f"Backup job started with ID: {job_id}")
+            logger.info("Waiting for backup to complete (this may take several minutes)...")
             
-            logger.info(f"Snapshot created successfully: {snapshot_slug}")
-            return snapshot_slug
+            # Poll for job completion
+            max_wait = 900  # 15 minutes max
+            poll_interval = 5  # Check every 5 seconds
+            elapsed = 0
+            
+            while elapsed < max_wait:
+                time.sleep(poll_interval)
+                elapsed += poll_interval
+                
+                try:
+                    # Check job status
+                    job_url = f"{self.supervisor_url}/jobs/{job_id}"
+                    job_response = requests.get(
+                        job_url,
+                        headers=self._get_supervisor_headers(),
+                        timeout=10
+                    )
+                    
+                    if job_response.ok:
+                        job_status = job_response.json()
+                        
+                        if job_status.get('result') == 'ok':
+                            job_info = job_status.get('data', {})
+                            state = job_info.get('state', 'unknown')
+                            progress = job_info.get('progress', 0)
+                            
+                            logger.info(f"Job state: {state}, progress: {progress}% (waited {elapsed}s)")
+                            
+                            if state == 'completed':
+                                # Job completed - get the backup slug
+                                reference = job_info.get('reference')
+                                if reference:
+                                    logger.info(f"Snapshot created successfully: {reference}")
+                                    return reference
+                                else:
+                                    logger.error(f"Job completed but no reference found: {job_info}")
+                                    return None
+                            
+                            elif state == 'failed':
+                                error = job_info.get('errors', ['Unknown error'])
+                                logger.error(f"Backup job failed: {error}")
+                                return None
+                    
+                except requests.exceptions.RequestException as poll_error:
+                    logger.warning(f"Error checking job status (will retry): {poll_error}")
+                    continue
+            
+            logger.error(f"Backup job timeout - took longer than {max_wait}s")
+            return None
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to create snapshot: {e}")
             logger.error(f"Exception type: {type(e).__name__}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response text: {e.response.text[:500]}")
             return None
     
     def get_snapshot_info(self, snapshot_slug):
