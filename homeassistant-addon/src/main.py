@@ -45,19 +45,29 @@ class HomeSafeConnector:
         logger.info("Creating new snapshot...")
         
         try:
+            payload = {'name': f'HomeSafe-{datetime.now().strftime("%Y%m%d-%H%M%S")}'}
+            
             response = requests.post(
                 f'{self.supervisor_url}/backups/new/full',
                 headers=self._get_supervisor_headers(),
-                json={'name': f'HomeSafe-{datetime.now().strftime("%Y%m%d-%H%M%S")}'},
-                timeout=300
+                json=payload,
+                timeout=600
             )
+            
+            # Log detailed error info
+            if not response.ok:
+                logger.error(f"Snapshot creation failed with status {response.status_code}")
+                logger.error(f"Response body: {response.text}")
+            
             response.raise_for_status()
             
             snapshot_data = response.json()
-            snapshot_slug = snapshot_data.get('data', {}).get('slug')
+            
+            # API returns slug directly in response (not nested in 'data')
+            snapshot_slug = snapshot_data.get('slug') or snapshot_data.get('data', {}).get('slug')
             
             if not snapshot_slug:
-                logger.error("Failed to get snapshot slug from response")
+                logger.error(f"Failed to get snapshot slug from response: {snapshot_data}")
                 return None
             
             logger.info(f"Snapshot created successfully: {snapshot_slug}")
