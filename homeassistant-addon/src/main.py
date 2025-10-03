@@ -269,10 +269,18 @@ class HomeSafeConnector:
         ha_version = snapshot_info.get('homeassistant', 'unknown') if snapshot_info else 'unknown'
         
         try:
-            # Get file size by seeking to end
-            snapshot_stream.raw.seek(0, 2)  # Seek to end
-            file_size = snapshot_stream.raw.tell()
-            snapshot_stream.raw.seek(0)  # Seek back to start
+            # Get file size from Content-Length header (streaming compatible)
+            file_size = int(snapshot_stream.headers.get('Content-Length', 0))
+            
+            # Fallback: get size from snapshot info if header not available
+            if file_size == 0:
+                logger.warning("Content-Length header not available, using snapshot info")
+                file_size = snapshot_info.get('size', 0)
+            
+            if file_size == 0:
+                logger.error("Could not determine file size")
+                return False
+            
             logger.info(f"File size: {file_size} bytes ({file_size / (1024*1024*1024):.2f} GB)")
             
             # Step 1: Initialize upload and get presigned URL
