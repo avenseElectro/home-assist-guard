@@ -168,77 +168,97 @@ serve(async (req) => {
       );
     }
 
-    // Upload to storage (streaming)
-    console.log('[backup-upload] Starting storage upload:', storagePath);
+    // Upload to storage in background (streaming)
+    console.log('[backup-upload] Starting background storage upload:', storagePath);
     console.log('[backup-upload] Body type:', typeof req.body, 'Is ReadableStream:', req.body instanceof ReadableStream);
     
-    const { error: uploadError } = await supabase.storage
-      .from('backups')
-      .upload(storagePath, req.body, {
-        contentType: 'application/x-tar',
-        upsert: false
-      });
-    
-    console.log('[backup-upload] Upload completed, error:', uploadError);
+    // Start background upload task
+    const uploadTask = (async () => {
+      try {
+        console.log('[backup-upload] Background task: Starting upload...');
+        const { error: uploadError } = await supabase.storage
+          .from('backups')
+          .upload(storagePath, req.body, {
+            contentType: 'application/x-tar',
+            upsert: false
+          });
+        
+        console.log('[backup-upload] Background task: Upload completed, error:', uploadError);
 
-    if (uploadError) {
-      console.error('Upload failed:', uploadError);
-      // Update backup status to failed
-      await supabase
-        .from('backups')
-        .update({ 
-          status: 'failed', 
-          error_message: uploadError.message 
-        })
-        .eq('id', backup.id);
+        if (uploadError) {
+          console.error('[backup-upload] Background task: Upload failed:', uploadError);
+          // Update backup status to failed
+          await supabase
+            .from('backups')
+            .update({ 
+              status: 'failed', 
+              error_message: uploadError.message 
+            })
+            .eq('id', backup.id);
 
-      // Log error
-      await supabase.from('backup_logs').insert({
-        user_id: userId,
-        backup_id: backup.id,
-        action: 'upload',
-        status: 'failed',
-        message: uploadError.message
-      });
+          // Log error
+          await supabase.from('backup_logs').insert({
+            user_id: userId,
+            backup_id: backup.id,
+            action: 'upload',
+            status: 'failed',
+            message: uploadError.message
+          });
+          return;
+        }
 
-      return new Response(
-        JSON.stringify({ error: 'Upload failed', details: uploadError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        // Update backup status to completed
+        await supabase
+          .from('backups')
+          .update({ 
+            status: 'completed', 
+            completed_at: new Date().toISOString() 
+          })
+          .eq('id', backup.id);
+
+        // Log success
+        await supabase.from('backup_logs').insert({
+          user_id: userId,
+          backup_id: backup.id,
+          action: 'upload',
+          status: 'success',
+          message: `Backup uploaded successfully: ${filename}`,
+          metadata: {
+            size_bytes: fileSize,
+            ha_version: haVersion
+          }
+        });
+
+        console.log('[backup-upload] Background task: Backup uploaded successfully:', backup.id);
+      } catch (error) {
+        console.error('[backup-upload] Background task error:', error);
+        await supabase
+          .from('backups')
+          .update({ 
+            status: 'failed', 
+            error_message: error instanceof Error ? error.message : 'Unknown error'
+          })
+          .eq('id', backup.id);
+      }
+    })();
+
+    // Use waitUntil to keep the function alive for the background task
+    // @ts-ignore - EdgeRuntime is available in Deno Deploy
+    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(uploadTask);
     }
 
-    // Update backup status to completed
-    const { data: completedBackup } = await supabase
-      .from('backups')
-      .update({ 
-        status: 'completed', 
-        completed_at: new Date().toISOString() 
-      })
-      .eq('id', backup.id)
-      .select()
-      .single();
-
-    // Log success
-    await supabase.from('backup_logs').insert({
-      user_id: userId,
-      backup_id: backup.id,
-      action: 'upload',
-      status: 'success',
-      message: `Backup uploaded successfully: ${filename}`,
-      metadata: {
-        size_bytes: fileSize,
-        ha_version: haVersion
-      }
-    });
-
-    console.log('Backup uploaded successfully:', backup.id);
-
+    // Return immediate response - upload continues in background
+    console.log('[backup-upload] Returning immediate response, upload continues in background');
     return new Response(
       JSON.stringify({
         success: true,
-        backup: completedBackup
+        backup_id: backup.id,
+        message: 'Upload started in background',
+        status: 'uploading'
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
