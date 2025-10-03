@@ -177,7 +177,7 @@ class HomeSafeConnector:
             return None
     
     def upload_to_homesafe(self, snapshot_slug, snapshot_stream):
-        """Upload snapshot to HomeSafe Backup SaaS (true streaming)"""
+        """Upload snapshot to HomeSafe using presigned URL (direct to storage)"""
         logger.info(f"Uploading snapshot to HomeSafe: {snapshot_slug}")
         
         # Get snapshot info for metadata
@@ -185,32 +185,91 @@ class HomeSafeConnector:
         ha_version = snapshot_info.get('homeassistant', 'unknown') if snapshot_info else 'unknown'
         
         try:
-            # Stream directly as raw body (no multipart, no buffering)
-            headers = {
-                'x-api-key': self.api_key,
-                'x-ha-version': ha_version,
-                'Content-Type': 'application/x-tar'
-            }
+            # Get file size by seeking to end
+            snapshot_stream.raw.seek(0, 2)  # Seek to end
+            file_size = snapshot_stream.raw.tell()
+            snapshot_stream.raw.seek(0)  # Seek back to start
+            logger.info(f"File size: {file_size} bytes ({file_size / (1024*1024*1024):.2f} GB)")
             
-            # Upload with true streaming
-            response = requests.put(
-                f'{self.api_url}/backup-upload',
-                data=snapshot_stream.raw,
-                headers=headers,
-                timeout=1800
+            # Step 1: Initialize upload and get presigned URL
+            logger.info("Step 1/3: Initializing upload...")
+            init_response = requests.post(
+                f'{self.api_url}/backup-upload?action=init',
+                headers={
+                    'x-api-key': self.api_key,
+                    'Content-Type': 'application/json'
+                },
+                json={
+                    'file_size': file_size,
+                    'ha_version': ha_version
+                },
+                timeout=30
             )
-            response.raise_for_status()
+            init_response.raise_for_status()
+            init_data = init_response.json()
             
-            result = response.json()
-            if result.get('success'):
-                logger.info(f"Backup uploaded successfully! Backup ID: {result.get('backup', {}).get('id')}")
-                return True
-            else:
-                logger.error(f"Upload failed: {result.get('error')}")
+            if not init_data.get('success'):
+                logger.error(f"Init failed: {init_data.get('error')}")
                 return False
+            
+            backup_id = init_data['backup_id']
+            upload_url = init_data['upload_url']
+            token = init_data['token']
+            logger.info(f"Upload initialized. Backup ID: {backup_id}")
+            
+            # Step 2: Upload directly to storage using presigned URL
+            logger.info("Step 2/3: Uploading file to storage (this may take several minutes)...")
+            upload_response = requests.put(
+                upload_url,
+                data=snapshot_stream.raw,
+                headers={
+                    'Content-Type': 'application/x-tar',
+                    'x-upsert': 'false'
+                },
+                timeout=3600  # 1 hour timeout for large files
+            )
+            
+            if not upload_response.ok:
+                logger.error(f"Storage upload failed: {upload_response.status_code} - {upload_response.text}")
+                # Notify backend of failure
+                requests.post(
+                    f'{self.api_url}/backup-upload?action=fail',
+                    headers={
+                        'x-api-key': self.api_key,
+                        'Content-Type': 'application/json'
+                    },
+                    json={
+                        'backup_id': backup_id,
+                        'error_message': f"Storage upload failed: {upload_response.status_code}"
+                    },
+                    timeout=30
+                )
+                return False
+            
+            logger.info("Upload to storage completed successfully")
+            
+            # Step 3: Mark upload as complete
+            logger.info("Step 3/3: Finalizing backup...")
+            complete_response = requests.post(
+                f'{self.api_url}/backup-upload?action=complete',
+                headers={
+                    'x-api-key': self.api_key,
+                    'Content-Type': 'application/json'
+                },
+                json={
+                    'backup_id': backup_id
+                },
+                timeout=30
+            )
+            complete_response.raise_for_status()
+            
+            logger.info(f"Backup uploaded successfully! Backup ID: {backup_id}")
+            return True
                 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to upload to HomeSafe: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response: {e.response.text[:500]}")
             return False
     
     def perform_backup(self):

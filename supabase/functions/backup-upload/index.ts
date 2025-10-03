@@ -14,17 +14,19 @@ serve(async (req) => {
   }
 
   try {
+    const url = new URL(req.url);
+    const action = url.searchParams.get('action') || 'init';
+    
+    console.log('[backup-upload] Action:', action);
     console.log('[backup-upload] Creating Supabase client...');
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-    console.log('[backup-upload] Supabase client created');
 
     // Get API key from header
     const apiKey = req.headers.get('x-api-key');
     if (!apiKey) {
-      console.error('Missing API key');
       return new Response(
         JSON.stringify({ error: 'Missing API key' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -39,7 +41,6 @@ serve(async (req) => {
       .single();
 
     if (keyError || !keyData || keyData.revoked_at) {
-      console.error('Invalid API key:', keyError);
       return new Response(
         JSON.stringify({ error: 'Invalid or revoked API key' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -54,226 +55,265 @@ serve(async (req) => {
       .update({ last_used_at: new Date().toISOString() })
       .eq('key_hash', apiKey);
 
-    // Check subscription limits
-    const { data: subscription } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (!subscription) {
-      console.error('No subscription found for user:', userId);
+    if (action === 'init') {
+      // Initialize upload - validate limits and return presigned URL
+      return await handleInit(supabase, userId, req);
+    } else if (action === 'complete') {
+      // Mark upload as complete
+      return await handleComplete(supabase, userId, req);
+    } else if (action === 'fail') {
+      // Mark upload as failed
+      return await handleFail(supabase, userId, req);
+    } else {
       return new Response(
-        JSON.stringify({ error: 'Subscription not found' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check backup count
-    const { count: backupCount } = await supabase
-      .from('backups')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .neq('status', 'deleted');
-
-    if (backupCount && backupCount >= subscription.max_backups) {
-      console.error('Backup limit reached:', backupCount, '/', subscription.max_backups);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Backup limit reached', 
-          limit: subscription.max_backups,
-          current: backupCount 
-        }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get file from request body (streaming)
-    console.log('[backup-upload] Reading request headers...');
-    const haVersion = req.headers.get('x-ha-version') || 'unknown';
-    const contentLength = req.headers.get('content-length');
-    console.log('[backup-upload] HA Version:', haVersion, 'Content-Length:', contentLength);
-    
-    if (!req.body) {
-      console.error('[backup-upload] No file body provided');
-      return new Response(
-        JSON.stringify({ error: 'No file provided' }),
+        JSON.stringify({ error: 'Invalid action' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const fileSize = contentLength ? parseInt(contentLength) : 0;
-    console.log('[backup-upload] File size:', fileSize, 'bytes');
-
-    // Check individual backup size against subscription limit
-    const maxBackupSizeBytes = subscription.max_backup_size_gb * 1024 * 1024 * 1024;
-    if (fileSize > maxBackupSizeBytes) {
-      console.error('Backup too large:', fileSize, '>', maxBackupSizeBytes);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Backup exceeds maximum size for your plan', 
-          max_backup_size_gb: subscription.max_backup_size_gb,
-          file_size_gb: (fileSize / (1024 * 1024 * 1024)).toFixed(2)
-        }),
-        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check total storage usage
-    const { data: existingBackups } = await supabase
-      .from('backups')
-      .select('size_bytes')
-      .eq('user_id', userId)
-      .neq('status', 'deleted');
-
-    const totalUsedBytes = (existingBackups || []).reduce((sum, b) => sum + (b.size_bytes || 0), 0);
-    const totalAfterUpload = totalUsedBytes + fileSize;
-    const maxTotalBytes = subscription.max_storage_gb * 1024 * 1024 * 1024;
-
-    if (totalAfterUpload > maxTotalBytes) {
-      console.error('Total storage limit exceeded:', totalAfterUpload, '>', maxTotalBytes);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Total storage limit exceeded', 
-          max_storage_gb: subscription.max_storage_gb,
-          current_usage_gb: (totalUsedBytes / (1024 * 1024 * 1024)).toFixed(2),
-          file_size_gb: (fileSize / (1024 * 1024 * 1024)).toFixed(2)
-        }),
-        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create backup record
-    const filename = `backup-${Date.now()}.tar`;
-    const storagePath = `${userId}/${Date.now()}-${filename}`;
-
-    const { data: backup, error: backupError } = await supabase
-      .from('backups')
-      .insert({
-        user_id: userId,
-        filename,
-        storage_path: storagePath,
-        size_bytes: fileSize,
-        ha_version: haVersion,
-        status: 'uploading'
-      })
-      .select()
-      .single();
-
-    if (backupError) {
-      console.error('Failed to create backup record:', backupError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to create backup record' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Upload to storage in background (streaming)
-    console.log('[backup-upload] Starting background storage upload:', storagePath);
-    console.log('[backup-upload] Body type:', typeof req.body, 'Is ReadableStream:', req.body instanceof ReadableStream);
-    
-    // Clone the body stream so it can be used in the background task
-    // The original body is closed when we return the response
-    const [bodyForUpload, _bodyDiscard] = req.body!.tee();
-    
-    // Start background upload task
-    const uploadTask = (async () => {
-      try {
-        console.log('[backup-upload] Background task: Starting upload...');
-        const { error: uploadError } = await supabase.storage
-          .from('backups')
-          .upload(storagePath, bodyForUpload, {
-            contentType: 'application/x-tar',
-            upsert: false
-          });
-        
-        console.log('[backup-upload] Background task: Upload completed, error:', uploadError);
-
-        if (uploadError) {
-          console.error('[backup-upload] Background task: Upload failed:', uploadError);
-          // Update backup status to failed
-          await supabase
-            .from('backups')
-            .update({ 
-              status: 'failed', 
-              error_message: uploadError.message 
-            })
-            .eq('id', backup.id);
-
-          // Log error
-          await supabase.from('backup_logs').insert({
-            user_id: userId,
-            backup_id: backup.id,
-            action: 'upload',
-            status: 'failed',
-            message: uploadError.message
-          });
-          return;
-        }
-
-        // Update backup status to completed
-        await supabase
-          .from('backups')
-          .update({ 
-            status: 'completed', 
-            completed_at: new Date().toISOString() 
-          })
-          .eq('id', backup.id);
-
-        // Log success
-        await supabase.from('backup_logs').insert({
-          user_id: userId,
-          backup_id: backup.id,
-          action: 'upload',
-          status: 'success',
-          message: `Backup uploaded successfully: ${filename}`,
-          metadata: {
-            size_bytes: fileSize,
-            ha_version: haVersion
-          }
-        });
-
-        console.log('[backup-upload] Background task: Backup uploaded successfully:', backup.id);
-      } catch (error) {
-        console.error('[backup-upload] Background task error:', error);
-        await supabase
-          .from('backups')
-          .update({ 
-            status: 'failed', 
-            error_message: error instanceof Error ? error.message : 'Unknown error'
-          })
-          .eq('id', backup.id);
-      }
-    })();
-
-    // Use waitUntil to keep the function alive for the background task
-    // @ts-ignore - EdgeRuntime is available in Deno Deploy
-    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
-      // @ts-ignore
-      EdgeRuntime.waitUntil(uploadTask);
-    }
-
-    // Return immediate response - upload continues in background
-    console.log('[backup-upload] Returning immediate response, upload continues in background');
-    return new Response(
-      JSON.stringify({
-        success: true,
-        backup_id: backup.id,
-        message: 'Upload started in background',
-        status: 'uploading'
-      }),
-      { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
   } catch (error) {
     console.error('[backup-upload] Unexpected error:', error);
-    console.error('[backup-upload] Error stack:', error instanceof Error ? error.stack : 'N/A');
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        error: error instanceof Error ? error.message : 'Unknown error'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
+
+async function handleInit(supabase: any, userId: string, req: Request) {
+  console.log('[backup-upload] Handling init...');
+  
+  const body = await req.json();
+  const { file_size, ha_version } = body;
+  
+  if (!file_size) {
+    return new Response(
+      JSON.stringify({ error: 'Missing file_size' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Check subscription limits
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (!subscription) {
+    return new Response(
+      JSON.stringify({ error: 'Subscription not found' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Check backup count
+  const { count: backupCount } = await supabase
+    .from('backups')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .neq('status', 'deleted');
+
+  if (backupCount && backupCount >= subscription.max_backups) {
+    return new Response(
+      JSON.stringify({ 
+        error: 'Backup limit reached', 
+        limit: subscription.max_backups,
+        current: backupCount 
+      }),
+      { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Check individual backup size
+  const maxBackupSizeBytes = subscription.max_backup_size_gb * 1024 * 1024 * 1024;
+  if (file_size > maxBackupSizeBytes) {
+    return new Response(
+      JSON.stringify({ 
+        error: 'Backup exceeds maximum size for your plan', 
+        max_backup_size_gb: subscription.max_backup_size_gb,
+        file_size_gb: (file_size / (1024 * 1024 * 1024)).toFixed(2)
+      }),
+      { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Check total storage usage
+  const { data: existingBackups } = await supabase
+    .from('backups')
+    .select('size_bytes')
+    .eq('user_id', userId)
+    .neq('status', 'deleted');
+
+  const totalUsedBytes = (existingBackups || []).reduce((sum: number, b: any) => sum + (b.size_bytes || 0), 0);
+  const totalAfterUpload = totalUsedBytes + file_size;
+  const maxTotalBytes = subscription.max_storage_gb * 1024 * 1024 * 1024;
+
+  if (totalAfterUpload > maxTotalBytes) {
+    return new Response(
+      JSON.stringify({ 
+        error: 'Total storage limit exceeded', 
+        max_storage_gb: subscription.max_storage_gb,
+        current_usage_gb: (totalUsedBytes / (1024 * 1024 * 1024)).toFixed(2),
+        file_size_gb: (file_size / (1024 * 1024 * 1024)).toFixed(2)
+      }),
+      { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Create backup record
+  const filename = `backup-${Date.now()}.tar`;
+  const storagePath = `${userId}/${Date.now()}-${filename}`;
+
+  const { data: backup, error: backupError } = await supabase
+    .from('backups')
+    .insert({
+      user_id: userId,
+      filename,
+      storage_path: storagePath,
+      size_bytes: file_size,
+      ha_version: ha_version || 'unknown',
+      status: 'uploading'
+    })
+    .select()
+    .single();
+
+  if (backupError) {
+    console.error('Failed to create backup record:', backupError);
+    return new Response(
+      JSON.stringify({ error: 'Failed to create backup record' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Create presigned upload URL (valid for 2 hours)
+  const { data: signedData, error: signedError } = await supabase.storage
+    .from('backups')
+    .createSignedUploadUrl(storagePath, {
+      upsert: false
+    });
+
+  if (signedError || !signedData) {
+    console.error('Failed to create signed URL:', signedError);
+    await supabase.from('backups').delete().eq('id', backup.id);
+    return new Response(
+      JSON.stringify({ error: 'Failed to create upload URL' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  console.log('[backup-upload] Init successful, returning upload URL');
+  return new Response(
+    JSON.stringify({
+      success: true,
+      backup_id: backup.id,
+      upload_url: signedData.signedUrl,
+      storage_path: storagePath,
+      token: signedData.token
+    }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function handleComplete(supabase: any, userId: string, req: Request) {
+  console.log('[backup-upload] Handling complete...');
+  
+  const body = await req.json();
+  const { backup_id } = body;
+
+  if (!backup_id) {
+    return new Response(
+      JSON.stringify({ error: 'Missing backup_id' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Verify backup belongs to user
+  const { data: backup, error: backupError } = await supabase
+    .from('backups')
+    .select('*')
+    .eq('id', backup_id)
+    .eq('user_id', userId)
+    .single();
+
+  if (backupError || !backup) {
+    return new Response(
+      JSON.stringify({ error: 'Backup not found' }),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Update backup status to completed
+  await supabase
+    .from('backups')
+    .update({ 
+      status: 'completed', 
+      completed_at: new Date().toISOString() 
+    })
+    .eq('id', backup_id);
+
+  // Log success
+  await supabase.from('backup_logs').insert({
+    user_id: userId,
+    backup_id: backup_id,
+    action: 'upload',
+    status: 'success',
+    message: `Backup uploaded successfully: ${backup.filename}`,
+    metadata: {
+      size_bytes: backup.size_bytes,
+      ha_version: backup.ha_version
+    }
+  });
+
+  console.log('[backup-upload] Upload completed successfully');
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: 'Upload completed'
+    }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function handleFail(supabase: any, userId: string, req: Request) {
+  console.log('[backup-upload] Handling fail...');
+  
+  const body = await req.json();
+  const { backup_id, error_message } = body;
+
+  if (!backup_id) {
+    return new Response(
+      JSON.stringify({ error: 'Missing backup_id' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Update backup status to failed
+  await supabase
+    .from('backups')
+    .update({ 
+      status: 'failed', 
+      error_message: error_message || 'Upload failed'
+    })
+    .eq('id', backup_id)
+    .eq('user_id', userId);
+
+  // Log failure
+  await supabase.from('backup_logs').insert({
+    user_id: userId,
+    backup_id: backup_id,
+    action: 'upload',
+    status: 'failed',
+    message: error_message || 'Upload failed'
+  });
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: 'Upload marked as failed'
+    }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
