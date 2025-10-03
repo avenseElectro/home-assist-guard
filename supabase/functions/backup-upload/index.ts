@@ -172,13 +172,17 @@ serve(async (req) => {
     console.log('[backup-upload] Starting background storage upload:', storagePath);
     console.log('[backup-upload] Body type:', typeof req.body, 'Is ReadableStream:', req.body instanceof ReadableStream);
     
+    // Clone the body stream so it can be used in the background task
+    // The original body is closed when we return the response
+    const [bodyForUpload, _bodyDiscard] = req.body!.tee();
+    
     // Start background upload task
     const uploadTask = (async () => {
       try {
         console.log('[backup-upload] Background task: Starting upload...');
         const { error: uploadError } = await supabase.storage
           .from('backups')
-          .upload(storagePath, req.body, {
+          .upload(storagePath, bodyForUpload, {
             contentType: 'application/x-tar',
             upsert: false
           });
