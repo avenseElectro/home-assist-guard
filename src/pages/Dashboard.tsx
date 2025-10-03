@@ -94,9 +94,9 @@ export default function Dashboard() {
       toast.loading("A eliminar backup...");
       
       const { data, error } = await supabase.functions.invoke(
-        `backup-delete/${backupId}`,
+        'backup-delete',
         {
-          method: "DELETE"
+          body: { backupId }
         }
       );
 

@@ -45,11 +45,12 @@ serve(async (req) => {
 
     console.log('[backup-delete] User authenticated:', user.id);
 
-    // Get backup ID from URL
-    const url = new URL(req.url);
-    const backupId = url.pathname.split('/').pop();
+    // Get backup ID from request body
+    const { backupId } = await req.json();
+    console.log('[backup-delete] Backup ID from body:', backupId);
 
     if (!backupId) {
+      console.error('[backup-delete] Missing backup ID in body');
       return new Response(
         JSON.stringify({ error: 'Missing backup ID' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
