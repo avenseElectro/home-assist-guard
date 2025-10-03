@@ -7,15 +7,19 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('[backup-upload] Request received:', req.method, req.url);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('[backup-upload] Creating Supabase client...');
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+    console.log('[backup-upload] Supabase client created');
 
     // Get API key from header
     const apiKey = req.headers.get('x-api-key');
@@ -85,11 +89,13 @@ serve(async (req) => {
     }
 
     // Get file from request body (streaming)
+    console.log('[backup-upload] Reading request headers...');
     const haVersion = req.headers.get('x-ha-version') || 'unknown';
     const contentLength = req.headers.get('content-length');
+    console.log('[backup-upload] HA Version:', haVersion, 'Content-Length:', contentLength);
     
     if (!req.body) {
-      console.error('No file body provided');
+      console.error('[backup-upload] No file body provided');
       return new Response(
         JSON.stringify({ error: 'No file provided' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -97,6 +103,7 @@ serve(async (req) => {
     }
 
     const fileSize = contentLength ? parseInt(contentLength) : 0;
+    console.log('[backup-upload] File size:', fileSize, 'bytes');
 
     // Check file size against subscription limits
     const maxSizeBytes = subscription.max_storage_gb * 1024 * 1024 * 1024;
@@ -137,12 +144,17 @@ serve(async (req) => {
     }
 
     // Upload to storage (streaming)
+    console.log('[backup-upload] Starting storage upload:', storagePath);
+    console.log('[backup-upload] Body type:', typeof req.body, 'Is ReadableStream:', req.body instanceof ReadableStream);
+    
     const { error: uploadError } = await supabase.storage
       .from('backups')
       .upload(storagePath, req.body, {
         contentType: 'application/x-tar',
         upsert: false
       });
+    
+    console.log('[backup-upload] Upload completed, error:', uploadError);
 
     if (uploadError) {
       console.error('Upload failed:', uploadError);
@@ -205,9 +217,13 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('[backup-upload] Unexpected error:', error);
+    console.error('[backup-upload] Error stack:', error instanceof Error ? error.stack : 'N/A');
     return new Response(
-      JSON.stringify({ error: (error as Error).message }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
