@@ -84,23 +84,24 @@ serve(async (req) => {
       );
     }
 
-    // Get file from form data
-    const formData = await req.formData();
-    const file = formData.get('file') as File;
-    const haVersion = formData.get('ha_version') as string;
-
-    if (!file) {
-      console.error('No file provided');
+    // Get file from request body (streaming)
+    const haVersion = req.headers.get('x-ha-version') || 'unknown';
+    const contentLength = req.headers.get('content-length');
+    
+    if (!req.body) {
+      console.error('No file body provided');
       return new Response(
         JSON.stringify({ error: 'No file provided' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const fileSize = contentLength ? parseInt(contentLength) : 0;
+
     // Check file size against subscription limits
     const maxSizeBytes = subscription.max_storage_gb * 1024 * 1024 * 1024;
-    if (file.size > maxSizeBytes) {
-      console.error('File too large:', file.size, '>', maxSizeBytes);
+    if (fileSize > maxSizeBytes) {
+      console.error('File too large:', fileSize, '>', maxSizeBytes);
       return new Response(
         JSON.stringify({ 
           error: 'File too large', 
@@ -111,7 +112,7 @@ serve(async (req) => {
     }
 
     // Create backup record
-    const filename = file.name || `backup-${Date.now()}.tar`;
+    const filename = `backup-${Date.now()}.tar`;
     const storagePath = `${userId}/${Date.now()}-${filename}`;
 
     const { data: backup, error: backupError } = await supabase
@@ -120,7 +121,7 @@ serve(async (req) => {
         user_id: userId,
         filename,
         storage_path: storagePath,
-        size_bytes: file.size,
+        size_bytes: fileSize,
         ha_version: haVersion,
         status: 'uploading'
       })
@@ -135,12 +136,11 @@ serve(async (req) => {
       );
     }
 
-    // Upload to storage
-    const fileBuffer = await file.arrayBuffer();
+    // Upload to storage (streaming)
     const { error: uploadError } = await supabase.storage
       .from('backups')
-      .upload(storagePath, fileBuffer, {
-        contentType: file.type || 'application/octet-stream',
+      .upload(storagePath, req.body, {
+        contentType: 'application/x-tar',
         upsert: false
       });
 
@@ -189,7 +189,7 @@ serve(async (req) => {
       status: 'success',
       message: `Backup uploaded successfully: ${filename}`,
       metadata: {
-        size_bytes: file.size,
+        size_bytes: fileSize,
         ha_version: haVersion
       }
     });

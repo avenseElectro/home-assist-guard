@@ -100,36 +100,27 @@ class HomeSafeConnector:
             return None
     
     def upload_to_homesafe(self, snapshot_slug, snapshot_stream):
-        """Upload snapshot to HomeSafe Backup SaaS (streaming)"""
+        """Upload snapshot to HomeSafe Backup SaaS (true streaming)"""
         logger.info(f"Uploading snapshot to HomeSafe: {snapshot_slug}")
         
         # Get snapshot info for metadata
         snapshot_info = self.get_snapshot_info(snapshot_slug)
-        if not snapshot_info:
-            logger.error("Failed to get snapshot info")
-            return False
-        
-        ha_version = snapshot_info.get('homeassistant', 'unknown')
-        filename = f"{snapshot_slug}.tar"
+        ha_version = snapshot_info.get('homeassistant', 'unknown') if snapshot_info else 'unknown'
         
         try:
-            # Prepare multipart form data with stream
-            files = {
-                'file': (filename, snapshot_stream.raw, 'application/x-tar')
-            }
-            data = {
-                'ha_version': ha_version
-            }
+            # Stream directly as raw body (no multipart, no buffering)
             headers = {
-                'x-api-key': self.api_key
+                'x-api-key': self.api_key,
+                'x-ha-version': ha_version,
+                'Content-Type': 'application/x-tar'
             }
             
-            response = requests.post(
+            # Upload with true streaming
+            response = requests.put(
                 f'{self.api_url}/backup-upload',
-                files=files,
-                data=data,
+                data=snapshot_stream.raw,
                 headers=headers,
-                timeout=600
+                timeout=1800
             )
             response.raise_for_status()
             
