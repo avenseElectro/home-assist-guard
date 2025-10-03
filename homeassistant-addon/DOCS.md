@@ -75,11 +75,11 @@ Uploads a backup file to HomeSafe cloud.
 
 The add-on respects your HomeSafe subscription limits:
 
-| Plan | Max Backups | Max Storage | Retention |
-|------|-------------|-------------|-----------|
-| Free | 3 | 1 GB | 7 days |
-| Pro | 30 | 10 GB | 90 days |
-| Business | 100 | 100 GB | 180 days |
+| Plan | Max Backups | Max Backup Size | Total Storage | Retention |
+|------|-------------|-----------------|---------------|-----------|
+| Free | 3 | 1 GB per backup | 1 GB total | 7 days |
+| Pro | 30 | 5 GB per backup | 10 GB total | 90 days |
+| Business | 100 | 8 GB per backup | 100 GB total | 180 days |
 
 ## Scheduling
 

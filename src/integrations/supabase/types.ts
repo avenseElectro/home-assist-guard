@@ -153,6 +153,7 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           id: string
+          max_backup_size_gb: number
           max_backups: number
           max_storage_gb: number
           plan: Database["public"]["Enums"]["subscription_plan"]
@@ -166,6 +167,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           id?: string
+          max_backup_size_gb?: number
           max_backups?: number
           max_storage_gb?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
@@ -179,6 +181,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           id?: string
+          max_backup_size_gb?: number
           max_backups?: number
           max_storage_gb?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]

@@ -141,10 +141,21 @@ Your backups are managed in the HomeSafe Backup dashboard:
 - Delete old backups or upgrade your plan
 - Check your subscription in the HomeSafe dashboard
 
-### "File too large"
-- Your backup exceeds your plan's storage limit
+### "Backup exceeds maximum size for your plan"
+- Your backup file exceeds the maximum size allowed for your subscription:
+  - Free plan: 1 GB per backup
+  - Pro plan: 5 GB per backup
+  - Business plan: 8 GB per backup
 - Consider upgrading to a higher plan
-- Clean up unused data in Home Assistant
+- Clean up unused data in Home Assistant to reduce backup size
+
+### "Total storage limit exceeded"
+- The sum of all your backups exceeds your plan's total storage:
+  - Free plan: 1 GB total
+  - Pro plan: 10 GB total
+  - Business plan: 100 GB total
+- Delete old backups to free up space
+- Upgrade your plan for more storage
 
 ## Security
 

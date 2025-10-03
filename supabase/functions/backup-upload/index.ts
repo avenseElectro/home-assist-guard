@@ -105,14 +105,39 @@ serve(async (req) => {
     const fileSize = contentLength ? parseInt(contentLength) : 0;
     console.log('[backup-upload] File size:', fileSize, 'bytes');
 
-    // Check file size against subscription limits
-    const maxSizeBytes = subscription.max_storage_gb * 1024 * 1024 * 1024;
-    if (fileSize > maxSizeBytes) {
-      console.error('File too large:', fileSize, '>', maxSizeBytes);
+    // Check individual backup size against subscription limit
+    const maxBackupSizeBytes = subscription.max_backup_size_gb * 1024 * 1024 * 1024;
+    if (fileSize > maxBackupSizeBytes) {
+      console.error('Backup too large:', fileSize, '>', maxBackupSizeBytes);
       return new Response(
         JSON.stringify({ 
-          error: 'File too large', 
-          max_size_gb: subscription.max_storage_gb 
+          error: 'Backup exceeds maximum size for your plan', 
+          max_backup_size_gb: subscription.max_backup_size_gb,
+          file_size_gb: (fileSize / (1024 * 1024 * 1024)).toFixed(2)
+        }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check total storage usage
+    const { data: existingBackups } = await supabase
+      .from('backups')
+      .select('size_bytes')
+      .eq('user_id', userId)
+      .neq('status', 'deleted');
+
+    const totalUsedBytes = (existingBackups || []).reduce((sum, b) => sum + (b.size_bytes || 0), 0);
+    const totalAfterUpload = totalUsedBytes + fileSize;
+    const maxTotalBytes = subscription.max_storage_gb * 1024 * 1024 * 1024;
+
+    if (totalAfterUpload > maxTotalBytes) {
+      console.error('Total storage limit exceeded:', totalAfterUpload, '>', maxTotalBytes);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Total storage limit exceeded', 
+          max_storage_gb: subscription.max_storage_gb,
+          current_usage_gb: (totalUsedBytes / (1024 * 1024 * 1024)).toFixed(2),
+          file_size_gb: (fileSize / (1024 * 1024 * 1024)).toFixed(2)
         }),
         { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
