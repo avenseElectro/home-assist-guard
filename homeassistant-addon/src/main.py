@@ -58,7 +58,7 @@ class HomeSafeConnector:
                 f'{self.supervisor_url}/backups/new/full',
                 headers=self._get_supervisor_headers(),
                 json=payload,
-                timeout=600  # 10 minutes timeout for large backups
+                timeout=900  # 15 minutes timeout for large backups
             )
             
             if not response.ok:
@@ -167,7 +167,7 @@ class HomeSafeConnector:
                 f'{self.supervisor_url}/backups/{snapshot_slug}/download',
                 headers=self._get_supervisor_headers(),
                 stream=True,
-                timeout=300
+                timeout=600  # 10 minutes for download
             )
             response.raise_for_status()
             return response  # Return stream response, not content
@@ -203,7 +203,7 @@ class HomeSafeConnector:
                     'file_size': file_size,
                     'ha_version': ha_version
                 },
-                timeout=120  # 2 minutes for init
+                timeout=300  # 5 minutes for init
             )
             init_response.raise_for_status()
             init_data = init_response.json()
@@ -242,7 +242,7 @@ class HomeSafeConnector:
                         'backup_id': backup_id,
                         'error_message': f"Storage upload failed: {upload_response.status_code}"
                     },
-                    timeout=120  # 2 minutes for failure notification
+                    timeout=300  # 5 minutes for failure notification
                 )
                 return False
             
@@ -259,7 +259,7 @@ class HomeSafeConnector:
                 json={
                     'backup_id': backup_id
                 },
-                timeout=120  # 2 minutes for completion
+                timeout=300  # 5 minutes for completion
             )
             complete_response.raise_for_status()
             
