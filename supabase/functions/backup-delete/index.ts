@@ -48,27 +48,37 @@ serve(async (req) => {
     }
 
     // Get backup details
+    console.log('[backup-delete] Fetching backup:', backupId, 'for user:', user.id);
     const { data: backup, error: fetchError } = await supabase
       .from('backups')
       .select('*')
       .eq('id', backupId)
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (fetchError || !backup) {
+      console.error('[backup-delete] Backup not found:', fetchError);
       return new Response(
         JSON.stringify({ error: 'Backup not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Delete from storage
-    const { error: storageError } = await supabase.storage
-      .from('backups')
-      .remove([backup.storage_path]);
+    console.log('[backup-delete] Backup found:', backup.filename, 'Status:', backup.status);
 
-    if (storageError) {
-      console.error('Failed to delete from storage:', storageError);
+    // Delete from storage (only if backup was successfully uploaded)
+    if (backup.status === 'completed') {
+      console.log('[backup-delete] Deleting from storage:', backup.storage_path);
+      const { error: storageError } = await supabase.storage
+        .from('backups')
+        .remove([backup.storage_path]);
+
+      if (storageError) {
+        console.error('[backup-delete] Failed to delete from storage:', storageError);
+        // Continue anyway - we still want to mark as deleted in DB
+      }
+    } else {
+      console.log('[backup-delete] Skipping storage deletion for failed/incomplete backup');
     }
 
     // Mark as deleted in database
