@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { DashboardNavbar as Navbar } from "@/components/DashboardNavbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Calendar, HardDrive, Key } from "lucide-react";
+import { Trash2, Calendar, HardDrive, Key, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -85,6 +85,37 @@ export default function Dashboard() {
   const formatSize = (bytes: number) => {
     const mb = bytes / (1024 * 1024);
     return `${mb.toFixed(2)} MB`;
+  };
+
+  const handleDownload = async (backupId: string, filename: string) => {
+    try {
+      toast.loading("A preparar download...");
+      
+      const { data, error } = await supabase.functions.invoke(
+        'backup-download',
+        {
+          body: { backupId }
+        }
+      );
+
+      toast.dismiss();
+
+      if (error) {
+        console.error("Download error:", error);
+        throw error;
+      }
+
+      if (data.download_url) {
+        window.open(data.download_url, '_blank');
+        toast.success("Download iniciado!");
+      } else {
+        throw new Error("No download URL returned");
+      }
+    } catch (error) {
+      toast.dismiss();
+      console.error("Error downloading backup:", error);
+      toast.error("Erro ao fazer download. Tente novamente.");
+    }
   };
 
   const handleDelete = async (backupId: string) => {
@@ -236,7 +267,16 @@ export default function Dashboard() {
                       <Button 
                         variant="ghost" 
                         size="sm"
+                        onClick={() => handleDownload(backup.id, backup.filename)}
+                        title="Fazer download"
+                      >
+                        <Download className="w-4 h-4 text-primary" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
                         onClick={() => handleDelete(backup.id)}
+                        title="Eliminar"
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>

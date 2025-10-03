@@ -234,13 +234,19 @@ async function handleInit(req: Request, supabase: any, userId: string) {
   const baserowData = await baserowResponse.json();
   const rowId = baserowData.id;
 
+  // Update backup record with Baserow row_id
+  await supabase
+    .from('backups')
+    .update({ baserow_row_id: rowId })
+    .eq('id', backup.id);
+
   // Log initialization
   await supabase.from('backup_logs').insert({
     user_id: userId,
     backup_id: backup.id,
     action: 'upload_init',
     status: 'success',
-    message: `Backup upload initialized (Baserow): ${filename}`
+    message: `Backup upload initialized (Baserow): ${filename}, row_id: ${rowId}`
   });
 
   return new Response(
