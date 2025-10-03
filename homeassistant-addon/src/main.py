@@ -41,15 +41,19 @@ class HomeSafeConnector:
         }
     
     def create_snapshot(self):
-        """Create a new snapshot using Home Assistant Supervisor API with async job polling"""
+        """Create a new snapshot using Home Assistant Supervisor API with hybrid fallback"""
         logger.info("Creating new snapshot...")
         
         try:
+            # Capture start time for fallback method
+            backup_start_time = datetime.now()
+            
             # Payload with optional parameters for full backup
             payload = {
-                'name': f'HomeSafe-{datetime.now().strftime("%Y%m%d-%H%M%S")}',
+                'name': f'HomeSafe-{backup_start_time.strftime("%Y%m%d-%H%M%S")}',
                 'compressed': True
             }
+            expected_name = payload['name']  # Save expected name for fallback
             
             logger.info(f"Starting backup job at: {self.supervisor_url}/backups/new/full")
             
@@ -87,12 +91,13 @@ class HomeSafeConnector:
             logger.info(f"Backup job started with ID: {job_id}")
             logger.info("Waiting for backup to complete (this may take several minutes)...")
             
-            # Poll for job completion
-            max_wait = 900  # 15 minutes max
+            # Poll for job completion with fallback detection
+            max_async_wait = 120  # 2 minutes for async method
             poll_interval = 5  # Check every 5 seconds
             elapsed = 0
+            unknown_state_time = 0  # Track time in "unknown" state
             
-            while elapsed < max_wait:
+            while elapsed < max_async_wait:
                 time.sleep(poll_interval)
                 elapsed += poll_interval
                 
@@ -129,13 +134,26 @@ class HomeSafeConnector:
                                 error = job_info.get('errors', ['Unknown error'])
                                 logger.error(f"Backup job failed: {error}")
                                 return None
-                    
+                            
+                            elif state == 'unknown':
+                                # Track time in unknown state
+                                unknown_state_time += poll_interval
+                                if unknown_state_time >= max_async_wait:
+                                    logger.warning(f"Job state stuck at 'unknown' for {unknown_state_time}s")
+                                    logger.info("Switching to fallback method: backup discovery by listing")
+                                    return self._discover_backup_by_listing(expected_name, backup_start_time)
+                            else:
+                                # Reset unknown state counter if we get a different state
+                                unknown_state_time = 0
+                
                 except requests.exceptions.RequestException as poll_error:
                     logger.warning(f"Error checking job status (will retry): {poll_error}")
                     continue
             
-            logger.error(f"Backup job timeout - took longer than {max_wait}s")
-            return None
+            # If we exit the loop, try fallback
+            logger.warning(f"Async method timeout after {max_async_wait}s")
+            logger.info("Switching to fallback method: backup discovery by listing")
+            return self._discover_backup_by_listing(expected_name, backup_start_time)
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to create snapshot: {e}")
@@ -143,6 +161,72 @@ class HomeSafeConnector:
             if hasattr(e, 'response') and e.response is not None:
                 logger.error(f"Response text: {e.response.text[:500]}")
             return None
+    
+    def _discover_backup_by_listing(self, expected_name, start_time):
+        """
+        Fallback method: Discover backup by listing all backups
+        and finding the one created after start_time
+        """
+        logger.info("=== FALLBACK METHOD: Discovering backup by listing ===")
+        logger.info(f"Looking for backup: {expected_name}")
+        logger.info(f"Created after: {start_time.isoformat()}")
+        
+        max_fallback_wait = 600  # 10 minutes
+        poll_interval = 10  # Check every 10 seconds
+        elapsed = 0
+        
+        while elapsed < max_fallback_wait:
+            try:
+                # List all backups
+                response = requests.get(
+                    f'{self.supervisor_url}/backups',
+                    headers=self._get_supervisor_headers(),
+                    timeout=30
+                )
+                
+                if response.ok:
+                    backups_data = response.json()
+                    
+                    if backups_data.get('result') == 'ok':
+                        backups = backups_data.get('data', {}).get('backups', [])
+                        
+                        # Search for matching backup
+                        for backup in backups:
+                            backup_name = backup.get('name', '')
+                            backup_slug = backup.get('slug', '')
+                            backup_date_str = backup.get('date', '')
+                            
+                            # Check if this is our backup
+                            if expected_name in backup_name or backup_name.startswith('HomeSafe-'):
+                                # Convert backup date to datetime
+                                try:
+                                    # Handle ISO format with or without 'Z'
+                                    if backup_date_str.endswith('Z'):
+                                        backup_date_str = backup_date_str[:-1] + '+00:00'
+                                    backup_date = datetime.fromisoformat(backup_date_str)
+                                    
+                                    # Check if created AFTER our job started
+                                    if backup_date >= start_time:
+                                        logger.info(f"✅ Found matching backup!")
+                                        logger.info(f"   Name: {backup_name}")
+                                        logger.info(f"   Slug: {backup_slug}")
+                                        logger.info(f"   Date: {backup_date_str}")
+                                        logger.info(f"   Size: {backup.get('size', 0)} bytes")
+                                        return backup_slug
+                                except (ValueError, AttributeError) as date_error:
+                                    logger.warning(f"Could not parse backup date '{backup_date_str}': {date_error}")
+                                    continue
+                    
+                    logger.info(f"No matching backup found yet (waited {elapsed}s)")
+            
+            except requests.exceptions.RequestException as e:
+                logger.warning(f"Error listing backups (will retry): {e}")
+            
+            time.sleep(poll_interval)
+            elapsed += poll_interval
+        
+        logger.error(f"Fallback method timeout - no backup found after {max_fallback_wait}s")
+        return None
     
     def get_snapshot_info(self, snapshot_slug):
         """Get information about a specific snapshot"""
