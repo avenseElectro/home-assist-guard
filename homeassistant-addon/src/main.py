@@ -203,7 +203,7 @@ class HomeSafeConnector:
                     'file_size': file_size,
                     'ha_version': ha_version
                 },
-                timeout=30
+                timeout=120  # 2 minutes for init
             )
             init_response.raise_for_status()
             init_data = init_response.json()
@@ -242,7 +242,7 @@ class HomeSafeConnector:
                         'backup_id': backup_id,
                         'error_message': f"Storage upload failed: {upload_response.status_code}"
                     },
-                    timeout=30
+                    timeout=120  # 2 minutes for failure notification
                 )
                 return False
             
@@ -259,7 +259,7 @@ class HomeSafeConnector:
                 json={
                     'backup_id': backup_id
                 },
-                timeout=30
+                timeout=120  # 2 minutes for completion
             )
             complete_response.raise_for_status()
             
