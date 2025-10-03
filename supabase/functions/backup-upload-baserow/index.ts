@@ -191,8 +191,8 @@ async function handleInit(req: Request, supabase: any, userId: string) {
     );
   }
 
-  // Get Baserow configuration
-  const baserowUrl = Deno.env.get('BASEROW_API_URL') || 'https://baserow.avensat.com';
+  // Get Baserow configuration (normalize URL by removing trailing slash)
+  const baserowUrl = (Deno.env.get('BASEROW_API_URL') || 'https://baserow.avensat.com').replace(/\/$/, '');
   const baserowToken = Deno.env.get('BASEROW_API_TOKEN');
   const baserowTableId = Deno.env.get('BASEROW_TABLE_ID') || '708';
 
