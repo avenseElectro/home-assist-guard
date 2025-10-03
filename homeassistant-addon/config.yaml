@@ -15,22 +15,12 @@ options:
   auto_backup_enabled: true
   backup_time: "03:00"
   retention_days: 7
-  storage_provider: "supabase"
-  baserow_api_url: ""
-  baserow_api_token: ""
-  baserow_database_id: ""
-  baserow_table_id: ""
 schema:
   api_url: str
   api_key: str
   auto_backup_enabled: bool
   backup_time: str
   retention_days: int(1,365)
-  storage_provider: list(supabase|baserow)
-  baserow_api_url: str?
-  baserow_api_token: password?
-  baserow_database_id: str?
-  baserow_table_id: str?
 startup: services
 boot: auto
 hassio_api: true

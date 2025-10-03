@@ -35,11 +35,13 @@ class HomeSafeConnector:
         self.api_key = API_KEY
         self.supervisor_token = SUPERVISOR_TOKEN
         self.supervisor_url = SUPERVISOR_URL
-        self.storage_provider = STORAGE_PROVIDER
-        self.baserow_api_url = BASEROW_API_URL
-        self.baserow_api_token = BASEROW_API_TOKEN
-        self.baserow_database_id = BASEROW_DATABASE_ID
-        self.baserow_table_id = BASEROW_TABLE_ID
+        
+        # TEMPORARY: Hardcoded for testing Baserow integration
+        self.storage_provider = 'baserow'
+        self.baserow_api_url = 'https://baserow.avensat.com'
+        self.baserow_api_token = 'Gkc7lS02kjPGrljfj7cUuV7oHFK4wIwT'
+        self.baserow_database_id = '246'
+        self.baserow_table_id = '708'
         
         if not self.api_key:
             logger.error("API Key not configured! Please configure the add-on.")
