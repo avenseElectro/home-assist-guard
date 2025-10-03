@@ -53,12 +53,12 @@ class HomeSafeConnector:
             
             logger.info(f"Starting backup job at: {self.supervisor_url}/backups/new/full")
             
-            # Start the backup job (returns immediately with job_id)
+            # Start the backup job (may take several minutes for large systems)
             response = requests.post(
                 f'{self.supervisor_url}/backups/new/full',
                 headers=self._get_supervisor_headers(),
                 json=payload,
-                timeout=30  # Short timeout for starting the job
+                timeout=600  # 10 minutes timeout for large backups
             )
             
             if not response.ok:
