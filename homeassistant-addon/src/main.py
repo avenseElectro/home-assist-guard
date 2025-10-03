@@ -440,23 +440,11 @@ class HomeSafeConnector:
             try:
                 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
                 
-                # Define chunk size for reading (50MB chunks to minimize memory)
-                CHUNK_SIZE = 50 * 1024 * 1024  # 50MB
-                
-                # Create a generator that reads the file in chunks
-                def file_chunk_generator():
-                    bytes_read = 0
-                    while True:
-                        chunk = snapshot_stream.raw.read(CHUNK_SIZE)
-                        if not chunk:
-                            break
-                        bytes_read += len(chunk)
-                        yield chunk
-                
-                # Prepare multipart encoder with chunked file reading
+                # Prepare multipart encoder with streaming file upload
+                # MultipartEncoder handles chunking internally to minimize memory usage
                 encoder = MultipartEncoder(
                     fields={
-                        'file': ('backup.tar', file_chunk_generator(), 'application/x-tar'),
+                        'file': ('backup.tar', snapshot_stream.raw, 'application/x-tar'),
                         'status': 'completed'
                     }
                 )
