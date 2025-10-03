@@ -4,7 +4,7 @@ import time
 import logging
 import schedule
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Setup logging
@@ -46,7 +46,7 @@ class HomeSafeConnector:
         
         try:
             # Capture start time for fallback method
-            backup_start_time = datetime.now()
+            backup_start_time = datetime.now(timezone.utc)
             
             # Payload with optional parameters for full backup
             payload = {
