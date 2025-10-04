@@ -26,13 +26,17 @@ class HomeSafeCard extends HTMLElement {
     this._hass = hass;
   }
 
+  getApiUrl() {
+    return `${window.location.protocol}//${window.location.hostname}:8099`;
+  }
+
   async loadBackups() {
     this._loading = true;
     this._error = null;
     this.render();
 
     try {
-      const response = await fetch('http://localhost:8099/api/backups');
+      const response = await fetch(`${this.getApiUrl()}/api/backups`);
       
       if (!response.ok) {
         throw new Error(`API returned status ${response.status}`);
@@ -62,7 +66,7 @@ class HomeSafeCard extends HTMLElement {
     this.render();
 
     try {
-      const response = await fetch('http://localhost:8099/api/backup/trigger', {
+      const response = await fetch(`${this.getApiUrl()}/api/backup/trigger`, {
         method: 'POST'
       });
       const data = await response.json();
@@ -243,7 +247,7 @@ class HomeSafeCard extends HTMLElement {
             <div class="empty-state-icon">&#9888;</div>
             <div style="color: var(--error-color, #e74c3c);">${this._error}</div>
             <div style="margin-top: 8px; font-size: 0.9rem;">
-              Verifique se o addon HomeSafe está em execução
+              Verifique se o addon HomeSafe esta em execucao
             </div>
           </div>
         ` : this._backups.length === 0 ? `
