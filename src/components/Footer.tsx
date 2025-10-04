@@ -46,6 +46,9 @@ export function Footer() {
         
         <div className="pt-8 border-t border-border text-center text-sm text-muted-foreground">
           <p>© 2025 HomeSafe Backup. Todos os direitos reservados.</p>
+          <p className="mt-2 flex items-center justify-center gap-1">
+            Built with <span className="text-primary font-semibold">HomeSafe</span>
+          </p>
         </div>
       </div>
     </footer>
