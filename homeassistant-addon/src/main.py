@@ -444,7 +444,7 @@ class HomeSafeConnector:
                 # MultipartEncoder handles chunking internally to minimize memory usage
                 encoder = MultipartEncoder(
                     fields={
-                        'file': ('backup.tar', snapshot_stream.raw, 'application/x-tar'),
+                        'field_6841': ('backup.tar', snapshot_stream.raw, 'application/x-tar'),
                         'status': 'completed'
                     }
                 )
@@ -476,7 +476,7 @@ class HomeSafeConnector:
                 # Fallback to non-chunked upload if requests-toolbelt is not available
                 logger.warning("requests-toolbelt not available, using non-chunked upload (higher memory usage)")
                 files = {
-                    'file': ('backup.tar', snapshot_stream.raw, 'application/x-tar')
+                    'field_6841': ('backup.tar', snapshot_stream.raw, 'application/x-tar')
                 }
                 data = {
                     'status': 'completed'
@@ -519,8 +519,8 @@ class HomeSafeConnector:
                 logger.info(f"Baserow response: {response_data}")
                 
                 # Check if file field exists in response
-                if 'file' in response_data:
-                    file_value = response_data['file']
+                if 'field_6841' in response_data:
+                    file_value = response_data['field_6841']
                     if file_value and len(file_value) > 0:
                         logger.info(f"✅ File successfully attached to Baserow row {row_id}")
                         logger.info(f"File info: {file_value[0] if isinstance(file_value, list) else file_value}")

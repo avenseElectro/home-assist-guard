@@ -97,7 +97,7 @@ serve(async (req) => {
     console.log('📦 Available fields:', Object.keys(baserowData));
     
     // Baserow file field structure: array with { url: "https://...", name: "..." }
-    const fileField = baserowData.file;
+    const fileField = baserowData.field_6841;
     
     console.log('📎 File field value:', fileField);
     console.log('📎 File field type:', typeof fileField);
