@@ -493,11 +493,16 @@ class HomeSafeConnector:
                 )
             
             # Log detailed response from Baserow
-            logger.info(f"Baserow PATCH response status: {upload_response.status_code}")
+            logger.info(f"🔍 BASEROW PATCH REQUEST:")
+            logger.info(f"  URL: {baserow_url}/api/database/rows/table/{baserow_table_id}/{row_id}/")
+            logger.info(f"  Token (first 10 chars): {self.baserow_api_token[:10]}...")
+            logger.info(f"  Response status: {upload_response.status_code}")
+            logger.info(f"  Response headers: {dict(upload_response.headers)}")
             
             if not upload_response.ok:
-                logger.error(f"Baserow upload failed: {upload_response.status_code}")
+                logger.error(f"❌ BASEROW UPLOAD FAILED: {upload_response.status_code}")
                 logger.error(f"Response text: {upload_response.text}")
+                logger.error(f"Request was to: {baserow_url}/api/database/rows/table/{baserow_table_id}/{row_id}/")
                 # Notify backend of failure
                 requests.post(
                     f'{self.api_url}/backup-upload-baserow?action=fail',
