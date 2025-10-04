@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Shield, Bell, Key, Webhook } from "lucide-react";
+import { Shield, Bell, Key, Webhook, Link as LinkIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -75,6 +75,11 @@ export function DashboardNavbar({ alertCount = 0, alerts = [] }: DashboardNavbar
           <Button variant="ghost" asChild>
             <Link to="/webhooks">
               <Webhook className="w-5 h-5" />
+            </Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link to="/integrations">
+              <LinkIcon className="w-5 h-5" />
             </Link>
           </Button>
           <Button variant="ghost" onClick={signOut}>

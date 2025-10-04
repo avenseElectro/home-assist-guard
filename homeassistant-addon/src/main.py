@@ -480,6 +480,15 @@ class HomeSafeConnector:
         elapsed_time = time.time() - start_time
         logger.info(f"=== Backup workflow completed in {elapsed_time:.2f}s - {'SUCCESS' if success else 'FAILED'} ===")
         
+        # Step 5: Sync YAML configs to GitHub if backup was successful
+        if success:
+            try:
+                github_sync = GitHubSync(self.api_key)
+                logger.info("Starting GitHub YAML sync...")
+                github_sync.sync_yaml_configs()
+            except Exception as git_error:
+                logger.warning(f"GitHub sync failed (backup was successful): {git_error}")
+        
         return success
     
     def delete_local_snapshot(self, snapshot_slug):
@@ -548,6 +557,141 @@ class HomeSafeConnector:
                     )
         except Exception as e:
                 logger.warning(f"Failed to cleanup old snapshots: {e}")
+
+class GitHubSync:
+    """Sync Home Assistant YAML configurations to GitHub"""
+    
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.api_url = API_URL
+        self.ha_config_path = Path('/config')
+        self.supervisor_url = SUPERVISOR_URL
+        self.supervisor_token = SUPERVISOR_TOKEN
+    
+    def get_user_github_settings(self):
+        """Fetch user's GitHub settings from HomeSafe API"""
+        try:
+            response = requests.get(
+                f'{self.api_url}/github-sync-config',
+                headers={'x-api-key': self.api_key},
+                timeout=30
+            )
+            
+            if response.ok:
+                data = response.json()
+                settings = data.get('settings')
+                
+                if settings and settings.get('github_enabled'):
+                    return {
+                        'token': settings.get('github_token'),
+                        'repo': settings.get('github_repo'),
+                        'branch': settings.get('github_branch', 'main')
+                    }
+            
+            return None
+        except Exception as e:
+            logger.error(f"Failed to fetch GitHub settings: {e}")
+            return None
+    
+    def sync_yaml_configs(self):
+        """Sync all YAML configuration files to GitHub"""
+        try:
+            settings = self.get_user_github_settings()
+            
+            if not settings:
+                logger.info("GitHub sync not configured or disabled")
+                return False
+            
+            logger.info("Starting GitHub YAML sync...")
+            
+            # Import git here to avoid errors if not installed
+            try:
+                from git import Repo, Actor
+            except ImportError:
+                logger.error("GitPython not installed! Cannot sync to GitHub.")
+                return False
+            
+            # Create temp directory for git repo
+            temp_dir = Path('/tmp/ha-config-sync')
+            if temp_dir.exists():
+                import shutil
+                shutil.rmtree(temp_dir)
+            temp_dir.mkdir(parents=True)
+            
+            # Clone or init repo
+            repo_url = f"https://{settings['token']}@github.com/{settings['repo']}.git"
+            
+            try:
+                logger.info(f"Cloning repository: {settings['repo']}")
+                repo = Repo.clone_from(
+                    repo_url,
+                    temp_dir,
+                    branch=settings['branch'],
+                    depth=1
+                )
+            except Exception as clone_error:
+                logger.warning(f"Clone failed, initializing new repo: {clone_error}")
+                repo = Repo.init(temp_dir)
+                origin = repo.create_remote('origin', repo_url)
+                
+                # Try to fetch existing branch
+                try:
+                    origin.fetch()
+                    repo.git.checkout(settings['branch'])
+                except:
+                    # Create new branch
+                    repo.git.checkout('-b', settings['branch'])
+            
+            # Copy YAML files
+            yaml_files = list(self.ha_config_path.glob('*.yaml')) + \
+                        list(self.ha_config_path.glob('*.yml'))
+            
+            if not yaml_files:
+                logger.warning("No YAML files found in /config")
+                return False
+            
+            logger.info(f"Found {len(yaml_files)} YAML files to sync")
+            
+            for yaml_file in yaml_files:
+                dest = temp_dir / yaml_file.name
+                try:
+                    import shutil
+                    shutil.copy2(yaml_file, dest)
+                    logger.debug(f"Copied: {yaml_file.name}")
+                except Exception as copy_error:
+                    logger.warning(f"Failed to copy {yaml_file.name}: {copy_error}")
+            
+            # Check if there are changes
+            if not repo.is_dirty(untracked_files=True):
+                logger.info("No changes to commit")
+                return True
+            
+            # Add all files
+            repo.git.add(A=True)
+            
+            # Commit
+            author = Actor("HomeSafe Backup", "backup@homesafe.app")
+            commit_message = f"Auto-sync YAML configs - {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC"
+            repo.index.commit(commit_message, author=author, committer=author)
+            logger.info(f"Created commit: {commit_message}")
+            
+            # Push
+            origin = repo.remote('origin')
+            origin.push(settings['branch'])
+            logger.info(f"✅ Pushed to GitHub: {settings['repo']} (branch: {settings['branch']})")
+            
+            # Cleanup
+            import shutil
+            shutil.rmtree(temp_dir)
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"GitHub sync failed: {e}")
+            logger.error(f"Exception details: {type(e).__name__}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return False
 
 # Flask API Endpoints
 @app.route('/api/backups', methods=['GET'])

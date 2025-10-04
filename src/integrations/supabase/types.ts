@@ -244,6 +244,134 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          created_at: string | null
+          dropbox_enabled: boolean | null
+          dropbox_token: string | null
+          github_branch: string | null
+          github_enabled: boolean | null
+          github_repo: string | null
+          github_token: string | null
+          id: string
+          s3_access_key: string | null
+          s3_bucket: string | null
+          s3_enabled: boolean | null
+          s3_region: string | null
+          s3_secret_key: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dropbox_enabled?: boolean | null
+          dropbox_token?: string | null
+          github_branch?: string | null
+          github_enabled?: boolean | null
+          github_repo?: string | null
+          github_token?: string | null
+          id?: string
+          s3_access_key?: string | null
+          s3_bucket?: string | null
+          s3_enabled?: boolean | null
+          s3_region?: string | null
+          s3_secret_key?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dropbox_enabled?: boolean | null
+          dropbox_token?: string | null
+          github_branch?: string | null
+          github_enabled?: boolean | null
+          github_repo?: string | null
+          github_token?: string | null
+          id?: string
+          s3_access_key?: string | null
+          s3_bucket?: string | null
+          s3_enabled?: boolean | null
+          s3_region?: string | null
+          s3_secret_key?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_configs: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          events: string[]
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
+      webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json
+          response_code: number | null
+          status: string
+          webhook_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload: Json
+          response_code?: number | null
+          status: string
+          webhook_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          response_code?: number | null
+          status?: string
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

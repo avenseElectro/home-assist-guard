@@ -21,6 +21,7 @@ import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import Webhooks from "./pages/Webhooks";
 import LovelaceGuide from "./pages/LovelaceGuide";
+import Integrations from "./pages/Integrations";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/api-keys" element={<ApiKeys />} />
           <Route path="/webhooks" element={<Webhooks />} />
+          <Route path="/integrations" element={<Integrations />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/upgrade" element={<Upgrade />} />
           <Route path="/subscription-success" element={<SubscriptionSuccess />} />
