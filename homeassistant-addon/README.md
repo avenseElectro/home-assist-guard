@@ -37,7 +37,7 @@ Before starting the add-on, you need to configure it:
 
 ### 1. Get Your API Key
 
-1. Go to your HomeSafe Backup dashboard: https://homesafe-backup.lovable.app
+1. Go to your HomeSafe Backup dashboard: https://homesafe.avensat.com
 2. Navigate to **Settings** → **API Keys**
 3. Click **Generate New Key**
 4. Copy the generated key (it will only be shown once!)
@@ -166,9 +166,9 @@ Your backups are managed in the HomeSafe Backup dashboard:
 
 ## Support
 
-- **Documentation**: https://homesafe-backup.lovable.app/docs
+- **Documentation**: https://homesafe.avensat.com/docs
 - **GitHub Issues**: https://github.com/avenseElectro/home-assist-guard/issues
-- **HomeSafe Dashboard**: https://homesafe-backup.lovable.app
+- **HomeSafe Dashboard**: https://homesafe.avensat.com
 
 ## License
 

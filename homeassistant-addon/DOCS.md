@@ -206,4 +206,4 @@ Contributions are welcome! Please:
 
 For issues and questions:
 - GitHub: https://github.com/avenseElectro/home-assist-guard
-- Dashboard: https://homesafe-backup.lovable.app
+- Dashboard: https://homesafe.avensat.com
