@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, Github, MessageSquare, FileQuestion } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Contact() {
   const { toast } = useToast();
@@ -16,16 +17,35 @@ export default function Contact() {
     message: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Simulação de envio (implementar com backend real)
-    toast({
-      title: "Mensagem enviada!",
-      description: "Entraremos em contacto em breve.",
-    });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    setFormData({ name: "", email: "", subject: "", message: "" });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-contact-email', {
+        body: formData
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Mensagem enviada!",
+        description: "Entraremos em contacto em breve. Verifique o seu email para confirmação.",
+      });
+
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (error: any) {
+      console.error('Error sending contact form:', error);
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: "Por favor, tente novamente ou contacte-nos por email diretamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -112,8 +132,8 @@ export default function Contact() {
                     />
                   </div>
 
-                  <Button type="submit" size="lg" className="w-full" variant="hero">
-                    Enviar Mensagem
+                  <Button type="submit" size="lg" className="w-full" variant="hero" disabled={isSubmitting}>
+                    {isSubmitting ? "A enviar..." : "Enviar Mensagem"}
                   </Button>
                 </form>
               </div>

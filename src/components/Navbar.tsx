@@ -1,8 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Shield } from "lucide-react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function Navbar() {
+  const { t } = useLanguage();
+  
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -15,19 +19,20 @@ export function Navbar() {
         
         <div className="hidden md:flex items-center gap-6">
           <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-smooth">
-            Preços
+            {t('nav.pricing')}
           </Link>
           <Link to="/docs" className="text-muted-foreground hover:text-foreground transition-smooth">
-            Documentação
+            {t('nav.docs')}
           </Link>
         </div>
         
         <div className="flex items-center gap-3">
+          <LanguageSwitcher />
           <Button asChild variant="ghost">
-            <Link to="/auth">Login</Link>
+            <Link to="/auth">{t('nav.login')}</Link>
           </Button>
           <Button asChild variant="default">
-            <Link to="/auth">Começar</Link>
+            <Link to="/auth">{t('nav.register')}</Link>
           </Button>
         </div>
       </div>
