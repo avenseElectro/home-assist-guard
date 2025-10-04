@@ -92,15 +92,39 @@ serve(async (req) => {
 
     const baserowData = await baserowResponse.json();
     
+    // Log complete Baserow response for debugging
+    console.log('📦 Baserow row data:', JSON.stringify(baserowData, null, 2));
+    console.log('📦 Available fields:', Object.keys(baserowData));
+    
     // Baserow file field structure: array with { url: "https://...", name: "..." }
     const fileField = baserowData.file;
     
+    console.log('📎 File field value:', fileField);
+    console.log('📎 File field type:', typeof fileField);
+    console.log('📎 Is array?', Array.isArray(fileField));
+    console.log('📎 Array length:', Array.isArray(fileField) ? fileField.length : 'N/A');
+    console.log('📎 First element:', Array.isArray(fileField) && fileField.length > 0 ? fileField[0] : 'N/A');
+    
     if (!fileField || !Array.isArray(fileField) || !fileField[0]?.url) {
+      console.error('❌ File validation failed');
       return new Response(
-        JSON.stringify({ error: 'File not found in Baserow' }),
+        JSON.stringify({ 
+          error: 'File not found in Baserow',
+          debug: {
+            row_id: backup.baserow_row_id,
+            table_id: baserowTableId,
+            file_field_exists: !!fileField,
+            file_field_type: typeof fileField,
+            file_field_is_array: Array.isArray(fileField),
+            file_field_value: fileField,
+            available_fields: Object.keys(baserowData)
+          }
+        }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log('✅ File found in Baserow:', fileField[0].url);
 
     const downloadUrl = fileField[0].url;
 

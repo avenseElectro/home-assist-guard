@@ -492,8 +492,12 @@ class HomeSafeConnector:
                     timeout=3600
                 )
             
+            # Log detailed response from Baserow
+            logger.info(f"Baserow PATCH response status: {upload_response.status_code}")
+            
             if not upload_response.ok:
-                logger.error(f"Baserow upload failed: {upload_response.status_code} - {upload_response.text}")
+                logger.error(f"Baserow upload failed: {upload_response.status_code}")
+                logger.error(f"Response text: {upload_response.text}")
                 # Notify backend of failure
                 requests.post(
                     f'{self.api_url}/backup-upload-baserow?action=fail',
@@ -508,6 +512,24 @@ class HomeSafeConnector:
                     timeout=300
                 )
                 return False
+            
+            # Verify file was uploaded by checking response
+            try:
+                response_data = upload_response.json()
+                logger.info(f"Baserow response: {response_data}")
+                
+                # Check if file field exists in response
+                if 'file' in response_data:
+                    file_value = response_data['file']
+                    if file_value and len(file_value) > 0:
+                        logger.info(f"✅ File successfully attached to Baserow row {row_id}")
+                        logger.info(f"File info: {file_value[0] if isinstance(file_value, list) else file_value}")
+                    else:
+                        logger.warning(f"⚠️ File field exists but is empty in Baserow response")
+                else:
+                    logger.warning(f"⚠️ 'file' field not found in Baserow response. Available fields: {list(response_data.keys())}")
+            except Exception as e:
+                logger.warning(f"Could not parse Baserow response for verification: {e}")
             
             logger.info("Upload to Baserow completed successfully")
             
