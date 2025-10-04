@@ -408,13 +408,37 @@ class HomeSafeConnector:
         # Step 3: Upload to Supabase Storage
         success = self.upload_to_homesafe(snapshot_slug, snapshot_stream)
         
+        # Step 4: Delete local backup immediately after upload (success or failure)
+        if success:
+            logger.info("Upload successful, cleaning up local backup...")
+        else:
+            logger.warning("Upload failed, but cleaning up local backup to save disk space...")
+        self.delete_local_snapshot(snapshot_slug)
+        
+        # Step 5: Maintain only 3 most recent local backups
+        self.cleanup_old_snapshots()
+        
         elapsed_time = time.time() - start_time
         logger.info(f"=== Backup workflow completed in {elapsed_time:.2f}s - {'SUCCESS' if success else 'FAILED'} ===")
         
         return success
     
+    def delete_local_snapshot(self, snapshot_slug):
+        """Delete a specific local snapshot"""
+        try:
+            logger.info(f"Deleting local snapshot: {snapshot_slug}")
+            response = requests.post(
+                f'{self.supervisor_url}/backups/{snapshot_slug}/remove',
+                headers=self._get_supervisor_headers(),
+                timeout=30
+            )
+            response.raise_for_status()
+            logger.info(f"Successfully deleted local snapshot: {snapshot_slug}")
+        except Exception as e:
+            logger.warning(f"Failed to delete snapshot {snapshot_slug}: {e}")
+    
     def cleanup_old_snapshots(self):
-        """Remove old local snapshots to save space"""
+        """Remove old local snapshots to save space (keeps 3 most recent)"""
         try:
             response = requests.get(
                 f'{self.supervisor_url}/backups',
@@ -435,7 +459,7 @@ class HomeSafeConnector:
                 
                 for snapshot in snapshots_to_delete:
                     slug = snapshot.get('slug')
-                    logger.info(f"Deleting old local snapshot: {slug}")
+                    logger.info(f"Deleting old local snapshot (cleanup): {slug}")
                     requests.post(
                         f'{self.supervisor_url}/backups/{slug}/remove',
                         headers=self._get_supervisor_headers(),
@@ -460,9 +484,6 @@ def main():
     # Perform initial backup on startup
     logger.info("Performing initial backup...")
     connector.perform_backup()
-    
-    # Cleanup old local snapshots
-    connector.cleanup_old_snapshots()
     
     # Main loop
     logger.info("Entering main loop...")
