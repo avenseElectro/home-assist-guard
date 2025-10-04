@@ -94,6 +94,8 @@ export type Database = {
           filename: string
           ha_version: string | null
           id: string
+          instance_id: string | null
+          instance_name: string | null
           size_bytes: number
           status: Database["public"]["Enums"]["backup_status"]
           storage_path: string
@@ -107,6 +109,8 @@ export type Database = {
           filename: string
           ha_version?: string | null
           id?: string
+          instance_id?: string | null
+          instance_name?: string | null
           size_bytes: number
           status?: Database["public"]["Enums"]["backup_status"]
           storage_path: string
@@ -120,6 +124,8 @@ export type Database = {
           filename?: string
           ha_version?: string | null
           id?: string
+          instance_id?: string | null
+          instance_name?: string | null
           size_bytes?: number
           status?: Database["public"]["Enums"]["backup_status"]
           storage_path?: string

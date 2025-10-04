@@ -128,6 +128,43 @@ docker build -t homesafe-connector .
 
 ## Advanced Configuration
 
+### Multi-Instance Support
+
+HomeSafe supports managing backups from multiple Home Assistant instances in a single account. This is useful if you have:
+- Multiple homes with separate Home Assistant installations
+- Test/development and production environments
+- Different properties or locations
+
+#### Configuration
+
+To identify your instance:
+
+1. **Instance Name** (Optional): A human-readable name like "Casa Principal", "Casa de Praia", or "Test Environment"
+2. **Instance ID** (Optional): A unique identifier like "ha-main", "ha-beach-house"
+
+If you don't provide an `instance_id`, the add-on will auto-generate one based on your system's hostname.
+
+**Example Configuration**:
+```yaml
+instance_name: "Casa Principal"
+instance_id: "ha-casa-principal"
+```
+
+#### Dashboard Filtering
+
+In the HomeSafe dashboard, you can:
+- View all backups from all instances
+- Filter backups by specific instance
+- See instance name badges on each backup
+
+#### Plan Limits
+
+- **Free Plan**: 1 instance
+- **Pro Plan**: Up to 2 instances
+- **Business Plan**: Up to 5 instances
+
+Each instance's backups count towards your total storage and backup count limits.
+
 ### Custom Backup Names
 
 Backups are automatically named: `HomeSafe-YYYYMMDD-HHMMSS`

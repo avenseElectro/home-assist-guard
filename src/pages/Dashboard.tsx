@@ -21,6 +21,8 @@ interface Backup {
   status: string;
   ha_version: string | null;
   backup_trigger?: string;
+  instance_name?: string | null;
+  instance_id?: string | null;
 }
 
 interface Subscription {
@@ -37,6 +39,7 @@ export default function Dashboard() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [webhooksCount, setWebhooksCount] = useState({ active: 0, total: 0 });
+  const [selectedInstance, setSelectedInstance] = useState<string>("all");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -213,6 +216,20 @@ export default function Dashboard() {
   const storageUsed = backups.reduce((acc, b) => acc + b.size_bytes, 0) / (1024 * 1024 * 1024);
   const storageLimit = subscription?.max_storage_gb || 1;
   const alertCount = getAlertCount(backups, subscription, storageUsed);
+
+  // Get unique instances for filter
+  const instances = Array.from(new Set(backups.map(b => b.instance_id).filter(Boolean))) as string[];
+  const instanceNames = backups.reduce((acc, b) => {
+    if (b.instance_id && b.instance_name) {
+      acc[b.instance_id] = b.instance_name;
+    }
+    return acc;
+  }, {} as Record<string, string>);
+
+  // Filter backups by selected instance
+  const filteredBackups = selectedInstance === "all" 
+    ? backups 
+    : backups.filter(b => b.instance_id === selectedInstance);
 
   // Calculate stats
   const successRate = backups.length > 0 
@@ -451,19 +468,37 @@ export default function Dashboard() {
         
         <Card className="shadow-card">
           <CardHeader>
-            <div>
-              <CardTitle>Os Seus Backups</CardTitle>
-              <CardDescription>Ver e gerir backups</CardDescription>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Os Seus Backups</CardTitle>
+                <CardDescription>Ver e gerir backups</CardDescription>
+              </div>
+              {instances.length > 0 && (
+                <select
+                  value={selectedInstance}
+                  onChange={(e) => setSelectedInstance(e.target.value)}
+                  className="px-3 py-2 rounded-md border border-border bg-background text-sm"
+                >
+                  <option value="all">Todas as Instâncias</option>
+                  {instances.map((instanceId) => (
+                    <option key={instanceId} value={instanceId}>
+                      {instanceNames[instanceId] || instanceId}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </CardHeader>
           <CardContent>
-            {backups.length === 0 ? (
+            {filteredBackups.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
-                Ainda não tem backups. Configure o HomeSafe Connector no seu Home Assistant para começar.
+                {selectedInstance === "all" 
+                  ? "Ainda não tem backups. Configure o HomeSafe Connector no seu Home Assistant para começar."
+                  : "Nenhum backup encontrado para esta instância."}
               </p>
             ) : (
               <div className="space-y-4">
-                {backups.map((backup) => (
+                {filteredBackups.map((backup) => (
                   <div 
                     key={backup.id}
                     className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-smooth"
@@ -474,6 +509,12 @@ export default function Dashboard() {
                         <Badge variant={backup.status === "completed" ? "default" : "secondary"}>
                           {backup.status === "completed" ? "Completo" : backup.status}
                         </Badge>
+                        {backup.instance_name && (
+                          <Badge variant="outline" className="gap-1">
+                            <HardDrive className="w-3 h-3" />
+                            {backup.instance_name}
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {formatDate(backup.created_at)} • {formatSize(backup.size_bytes)}

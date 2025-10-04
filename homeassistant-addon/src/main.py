@@ -24,6 +24,8 @@ AUTO_BACKUP = os.getenv('AUTO_BACKUP', 'true').lower() == 'true'
 BACKUP_TIME = os.getenv('BACKUP_TIME', '03:00')
 SUPERVISOR_TOKEN = os.getenv('SUPERVISOR_TOKEN', '')
 SUPERVISOR_URL = 'http://supervisor'
+INSTANCE_NAME = os.getenv('INSTANCE_NAME', 'Home Assistant')
+INSTANCE_ID = os.getenv('INSTANCE_ID', '')
 
 # Flask app for API
 app = Flask(__name__)
@@ -42,10 +44,19 @@ class HomeSafeConnector:
         self.api_key = API_KEY
         self.supervisor_token = SUPERVISOR_TOKEN
         self.supervisor_url = SUPERVISOR_URL
+        self.instance_name = INSTANCE_NAME
+        self.instance_id = INSTANCE_ID or self._generate_instance_id()
         
         if not self.api_key:
             logger.error("API Key not configured! Please configure the add-on.")
             exit(1)
+    
+    def _generate_instance_id(self):
+        """Generate a unique instance ID based on hostname"""
+        import socket
+        hostname = socket.gethostname()
+        # Use hostname or a default identifier
+        return f"ha-{hostname.lower().replace(' ', '-')}"
     
     def _get_supervisor_headers(self):
         """Get headers for Supervisor API requests"""
@@ -363,7 +374,9 @@ class HomeSafeConnector:
                 json={
                     'file_size': file_size,
                     'ha_version': ha_version,
-                    'backup_trigger': trigger_type
+                    'backup_trigger': trigger_type,
+                    'instance_name': self.instance_name,
+                    'instance_id': self.instance_id
                 },
                 timeout=300
             )

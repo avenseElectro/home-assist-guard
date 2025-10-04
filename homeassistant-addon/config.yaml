@@ -16,12 +16,16 @@ options:
   auto_backup_enabled: true
   backup_time: "03:00"
   retention_days: 7
+  instance_name: "Home Assistant"
+  instance_id: ""
 schema:
   api_url: str
   api_key: str
   auto_backup_enabled: bool
   backup_time: str
   retention_days: int(1,365)
+  instance_name: str?
+  instance_id: str?
 startup: services
 boot: auto
 hassio_api: true
