@@ -178,7 +178,7 @@ export default function Docs() {
                 <div>
                   <code className="text-sm bg-muted px-2 py-1 rounded">api_url</code>
                   <p className="text-sm mt-1">URL da API HomeSafe (já pré-configurado)</p>
-                  <CodeBlock code="https://api.homesafe.com/v1" />
+                  <CodeBlock code="https://iagsshcczgmjdrdweirb.supabase.co/functions/v1" />
                 </div>
                 
                 <div>
@@ -202,7 +202,7 @@ export default function Docs() {
                 <div>
                   <code className="text-sm bg-muted px-2 py-1 rounded">retention_days</code>
                   <p className="text-sm mt-1">Dias de retenção (depende do seu plano)</p>
-                  <CodeBlock code="30" />
+                  <CodeBlock code="7" />
                 </div>
               </div>
             </div>
@@ -210,11 +210,11 @@ export default function Docs() {
             <h4 className="font-semibold mt-6">Exemplo de Configuração Completa:</h4>
             <CodeBlock 
               code={`{
-  "api_url": "https://api.homesafe.com/v1",
+  "api_url": "https://iagsshcczgmjdrdweirb.supabase.co/functions/v1",
   "api_key": "hsb_1234567890abcdef",
   "auto_backup_enabled": true,
   "backup_time": "03:00",
-  "retention_days": 30
+  "retention_days": 7
 }`}
               language="json"
             />

@@ -49,7 +49,7 @@ export default function ApiDocs() {
             {/* Base URL */}
             <section className="mb-16">
               <h2 className="text-3xl font-bold mb-6">Base URL</h2>
-              <CodeBlock code="https://api.homesafe.com/v1" />
+              <CodeBlock code="https://iagsshcczgmjdrdweirb.supabase.co/functions/v1" />
               <p className="text-muted-foreground mt-4">
                 Todas as requisições devem ser feitas para este endpoint base.
               </p>
@@ -59,17 +59,17 @@ export default function ApiDocs() {
             <section className="mb-16">
               <h2 className="text-3xl font-bold mb-6">Autenticação</h2>
               <p className="text-muted-foreground mb-4">
-                Todas as requisições à API requerem autenticação via Bearer token. 
+                Todas as requisições à API requerem autenticação via API Key. 
                 Obtenha a sua API Key no <Link to="/api-keys" className="text-primary hover:underline">dashboard</Link>.
               </p>
 
               <h3 className="text-xl font-semibold mb-4">Header de Autenticação</h3>
-              <CodeBlock code='Authorization: Bearer YOUR_API_KEY' />
+              <CodeBlock code='x-api-key: YOUR_API_KEY' />
 
               <h3 className="text-xl font-semibold mt-8 mb-4">Exemplo de Requisição</h3>
               <CodeBlock 
-                code={`curl https://api.homesafe.com/v1/backups \\
-  -H "Authorization: Bearer hsb_1234567890abcdef" \\
+                code={`curl https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-list \\
+  -H "x-api-key: hsb_1234567890abcdef" \\
   -H "Content-Type: application/json"`}
               />
 
@@ -90,7 +90,7 @@ export default function ApiDocs() {
               <div className="mb-10 p-6 rounded-lg bg-card border border-border">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="px-3 py-1 bg-accent text-accent-foreground rounded text-sm font-semibold">GET</span>
-                  <code className="text-lg font-mono">/backups</code>
+                  <code className="text-lg font-mono">/backup-list</code>
                 </div>
                 <p className="text-muted-foreground mb-4">Lista todos os backups da conta autenticada.</p>
 
@@ -103,19 +103,17 @@ export default function ApiDocs() {
       "filename": "homeassistant_2024_01_15.tar",
       "size_bytes": 1048576,
       "created_at": "2024-01-15T03:00:00Z",
-      "expires_at": "2024-02-15T03:00:00Z"
+      "status": "completed"
     }
-  ],
-  "total": 5,
-  "storage_used_bytes": 5242880
+  ]
 }`}
                   language="json"
                 />
 
                 <h4 className="font-semibold mt-6 mb-2">Exemplo</h4>
                 <CodeBlock 
-                  code={`curl https://api.homesafe.com/v1/backups \\
-  -H "Authorization: Bearer YOUR_API_KEY"`}
+                  code={`curl https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-list \\
+  -H "x-api-key: YOUR_API_KEY"`}
                 />
               </div>
 
@@ -123,81 +121,94 @@ export default function ApiDocs() {
               <div className="mb-10 p-6 rounded-lg bg-card border border-border">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm font-semibold">POST</span>
-                  <code className="text-lg font-mono">/backups</code>
+                  <code className="text-lg font-mono">/backup-upload</code>
                 </div>
                 <p className="text-muted-foreground mb-4">Faz upload de um novo backup.</p>
 
                 <h4 className="font-semibold mb-2">Parâmetros (multipart/form-data)</h4>
                 <ul className="list-disc list-inside ml-4 mb-4 text-muted-foreground">
                   <li><code>file</code> - Ficheiro .tar do backup (obrigatório)</li>
-                  <li><code>retention_days</code> - Dias de retenção (opcional, usa padrão do plano)</li>
+                  <li><code>filename</code> - Nome do ficheiro (obrigatório)</li>
                 </ul>
 
-                <h4 className="font-semibold mb-2">Resposta de Sucesso (201 Created)</h4>
+                <h4 className="font-semibold mb-2">Resposta de Sucesso (200 OK)</h4>
                 <CodeBlock 
                   code={`{
-  "id": "bkp_456def",
-  "filename": "homeassistant_2024_01_16.tar",
-  "size_bytes": 1152000,
-  "created_at": "2024-01-16T10:30:00Z",
-  "expires_at": "2024-02-16T10:30:00Z"
+  "success": true,
+  "backup_id": "bkp_456def",
+  "message": "Backup uploaded successfully"
 }`}
                   language="json"
                 />
 
                 <h4 className="font-semibold mt-6 mb-2">Exemplo</h4>
                 <CodeBlock 
-                  code={`curl -X POST https://api.homesafe.com/v1/backups \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+                  code={`curl -X POST https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-upload \\
+  -H "x-api-key: YOUR_API_KEY" \\
   -F "file=@/path/to/backup.tar" \\
-  -F "retention_days=30"`}
+  -F "filename=homeassistant_backup.tar"`}
                 />
               </div>
 
               {/* Download Backup */}
               <div className="mb-10 p-6 rounded-lg bg-card border border-border">
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="px-3 py-1 bg-accent text-accent-foreground rounded text-sm font-semibold">GET</span>
-                  <code className="text-lg font-mono">/backups/:id/download</code>
+                  <span className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm font-semibold">POST</span>
+                  <code className="text-lg font-mono">/backup-download</code>
                 </div>
-                <p className="text-muted-foreground mb-4">Descarrega um backup específico.</p>
+                <p className="text-muted-foreground mb-4">Gera URL assinada para download de um backup específico.</p>
 
-                <h4 className="font-semibold mb-2">Parâmetros URL</h4>
+                <h4 className="font-semibold mb-2">Parâmetros (JSON body)</h4>
                 <ul className="list-disc list-inside ml-4 mb-4 text-muted-foreground">
-                  <li><code>id</code> - ID do backup (obrigatório)</li>
+                  <li><code>backupId</code> - ID do backup (obrigatório)</li>
                 </ul>
 
                 <h4 className="font-semibold mb-2">Resposta de Sucesso (200 OK)</h4>
-                <p className="text-muted-foreground mb-4">Retorna o ficheiro binário .tar com headers apropriados.</p>
+                <CodeBlock 
+                  code={`{
+  "url": "https://signed-url...",
+  "filename": "homeassistant_backup.tar"
+}`}
+                  language="json"
+                />
 
                 <h4 className="font-semibold mb-2">Exemplo</h4>
                 <CodeBlock 
-                  code={`curl https://api.homesafe.com/v1/backups/bkp_123abc/download \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
-  -o backup.tar`}
+                  code={`curl -X POST https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-download \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"backupId": "bkp_123abc"}'`}
                 />
               </div>
 
               {/* Delete Backup */}
               <div className="mb-10 p-6 rounded-lg bg-card border border-border">
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="px-3 py-1 bg-destructive text-destructive-foreground rounded text-sm font-semibold">DELETE</span>
-                  <code className="text-lg font-mono">/backups/:id</code>
+                  <span className="px-3 py-1 bg-destructive text-destructive-foreground rounded text-sm font-semibold">POST</span>
+                  <code className="text-lg font-mono">/backup-delete</code>
                 </div>
                 <p className="text-muted-foreground mb-4">Elimina permanentemente um backup.</p>
 
-                <h4 className="font-semibold mb-2">Parâmetros URL</h4>
+                <h4 className="font-semibold mb-2">Parâmetros (JSON body)</h4>
                 <ul className="list-disc list-inside ml-4 mb-4 text-muted-foreground">
-                  <li><code>id</code> - ID do backup (obrigatório)</li>
+                  <li><code>backupId</code> - ID do backup (obrigatório)</li>
                 </ul>
 
-                <h4 className="font-semibold mb-2">Resposta de Sucesso (204 No Content)</h4>
-                <p className="text-muted-foreground mb-4">Sem corpo de resposta. Backup eliminado com sucesso.</p>
+                <h4 className="font-semibold mb-2">Resposta de Sucesso (200 OK)</h4>
+                <CodeBlock 
+                  code={`{
+  "success": true,
+  "message": "Backup deleted successfully"
+}`}
+                  language="json"
+                />
 
                 <h4 className="font-semibold mb-2">Exemplo</h4>
                 <CodeBlock 
-                  code={`curl -X DELETE https://api.homesafe.com/v1/backups/bkp_123abc \\
-  -H "Authorization: Bearer YOUR_API_KEY"`}
+                  code={`curl -X POST https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-delete \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"backupId": "bkp_123abc"}'`}
                 />
               </div>
 
@@ -207,17 +218,16 @@ export default function ApiDocs() {
                   <span className="px-3 py-1 bg-accent text-accent-foreground rounded text-sm font-semibold">GET</span>
                   <code className="text-lg font-mono">/account</code>
                 </div>
-                <p className="text-muted-foreground mb-4">Obtém informações da conta e limites.</p>
+                <p className="text-muted-foreground mb-4">Obtém informações da conta e limites (endpoint em desenvolvimento).</p>
 
                 <h4 className="font-semibold mb-2">Resposta de Sucesso (200 OK)</h4>
                 <CodeBlock 
                   code={`{
   "plan": "pro",
-  "storage_limit_bytes": 10737418240,
-  "storage_used_bytes": 5242880,
+  "storage_limit_gb": 10,
   "backup_count": 5,
   "backup_limit": 10,
-  "retention_days": 30
+  "retention_days": 7
 }`}
                   language="json"
                 />
@@ -363,7 +373,7 @@ export default function ApiDocs() {
                 Precisa de ajuda com a API? Entre em contacto:
               </p>
               <ul className="list-disc list-inside space-y-2 ml-4 text-muted-foreground">
-                <li>📧 Email: <a href="mailto:api@homesafe.com" className="text-primary hover:underline">api@homesafe.com</a></li>
+                <li>📧 Email: <a href="mailto:support@avensat.com" className="text-primary hover:underline">support@avensat.com</a></li>
                 <li>📖 Documentação: <Link to="/docs" className="text-primary hover:underline">Ver guias completos</Link></li>
                 <li>💬 GitHub: <a href="https://github.com/avenseElectro/home-assist-guard/issues" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Reportar problemas</a></li>
               </ul>
