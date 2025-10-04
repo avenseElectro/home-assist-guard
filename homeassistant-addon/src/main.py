@@ -421,8 +421,24 @@ class HomeSafeConnector:
         return success
     
     def delete_local_snapshot(self, snapshot_slug):
-        """Delete a specific local snapshot"""
+        """Delete a specific local snapshot (with existence check)"""
         try:
+            # Step 1: Check if backup exists first
+            logger.info(f"Checking if backup {snapshot_slug} exists...")
+            check_response = requests.get(
+                f'{self.supervisor_url}/backups/{snapshot_slug}/info',
+                headers=self._get_supervisor_headers(),
+                timeout=30
+            )
+            
+            # If backup doesn't exist (404), just log and return
+            if check_response.status_code == 404:
+                logger.info(f"Backup {snapshot_slug} already deleted or not found (skip)")
+                return
+            
+            check_response.raise_for_status()
+            
+            # Step 2: If exists, delete it
             logger.info(f"Deleting local snapshot: {snapshot_slug}")
             response = requests.post(
                 f'{self.supervisor_url}/backups/{snapshot_slug}/remove',
@@ -431,6 +447,12 @@ class HomeSafeConnector:
             )
             response.raise_for_status()
             logger.info(f"Successfully deleted local snapshot: {snapshot_slug}")
+            
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                logger.info(f"Backup {snapshot_slug} not found (already deleted)")
+            else:
+                logger.warning(f"Failed to delete snapshot {snapshot_slug}: {e}")
         except Exception as e:
             logger.warning(f"Failed to delete snapshot {snapshot_slug}: {e}")
     
