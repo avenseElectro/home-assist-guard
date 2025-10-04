@@ -205,5 +205,5 @@ Contributions are welcome! Please:
 ## Support
 
 For issues and questions:
-- GitHub: https://github.com/YOUR_USERNAME/homesafe-addon
-- Dashboard: https://YOUR_APP_URL.lovable.app
+- GitHub: https://github.com/avenseElectro/home-assist-guard
+- Dashboard: https://homesafe-backup.lovable.app

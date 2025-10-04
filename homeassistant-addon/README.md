@@ -18,7 +18,7 @@ Automated backup integration between Home Assistant and HomeSafe Backup SaaS.
 
 1. Navigate to **Settings** → **Add-ons** → **Add-on Store** in Home Assistant
 2. Click the **⋮** menu (top right) → **Repositories**
-3. Add this repository URL: `https://github.com/YOUR_USERNAME/homesafe-addon`
+3. Add this repository URL: `https://github.com/avenseElectro/home-assist-guard`
 4. Find **HomeSafe Connector** in the add-on store
 5. Click **Install**
 
@@ -37,7 +37,7 @@ Before starting the add-on, you need to configure it:
 
 ### 1. Get Your API Key
 
-1. Go to your HomeSafe Backup dashboard: https://YOUR_APP_URL.lovable.app
+1. Go to your HomeSafe Backup dashboard: https://homesafe-backup.lovable.app
 2. Navigate to **Settings** → **API Keys**
 3. Click **Generate New Key**
 4. Copy the generated key (it will only be shown once!)
@@ -166,9 +166,9 @@ Your backups are managed in the HomeSafe Backup dashboard:
 
 ## Support
 
-- **Documentation**: https://YOUR_APP_URL.lovable.app/docs
-- **GitHub Issues**: https://github.com/YOUR_USERNAME/homesafe-addon/issues
-- **HomeSafe Dashboard**: https://YOUR_APP_URL.lovable.app
+- **Documentation**: https://homesafe-backup.lovable.app/docs
+- **GitHub Issues**: https://github.com/avenseElectro/home-assist-guard/issues
+- **HomeSafe Dashboard**: https://homesafe-backup.lovable.app
 
 ## License
 
