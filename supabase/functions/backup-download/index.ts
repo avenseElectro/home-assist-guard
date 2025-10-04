@@ -48,7 +48,7 @@ serve(async (req) => {
     // Get backup details
     const { data: backup, error: backupError } = await supabase
       .from('backups')
-      .select('baserow_row_id, filename')
+      .select('storage_path, filename, status')
       .eq('id', backupId)
       .eq('user_id', user.id)
       .single();
@@ -60,73 +60,27 @@ serve(async (req) => {
       );
     }
 
-    if (!backup.baserow_row_id) {
+    if (backup.status !== 'completed') {
       return new Response(
-        JSON.stringify({ error: 'Backup row ID not found in Baserow (old backup)' }),
+        JSON.stringify({ error: 'Backup not ready for download' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get Baserow configuration
-    const baserowUrl = (Deno.env.get('BASEROW_API_URL') || 'https://baserow.avensat.com').replace(/\/$/, '');
-    const baserowToken = Deno.env.get('BASEROW_API_TOKEN');
-    const baserowTableId = Deno.env.get('BASEROW_TABLE_ID') || '708';
+    // Generate signed download URL from Supabase Storage (valid for 1 hour)
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from('backups')
+      .createSignedUrl(backup.storage_path, 3600);
 
-    // Fetch row from Baserow to get file field
-    const baserowResponse = await fetch(
-      `${baserowUrl}/api/database/rows/table/${baserowTableId}/${backup.baserow_row_id}/`,
-      {
-        headers: {
-          'Authorization': `Token ${baserowToken}`,
-        }
-      }
-    );
-
-    if (!baserowResponse.ok) {
-      console.error('Failed to fetch from Baserow:', await baserowResponse.text());
+    if (signedError || !signedData) {
+      console.error('Failed to create signed URL:', signedError);
       return new Response(
-        JSON.stringify({ error: 'Failed to get file from Baserow' }),
+        JSON.stringify({ error: 'Failed to generate download URL' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const baserowData = await baserowResponse.json();
-    
-    // Log complete Baserow response for debugging
-    console.log('📦 Baserow row data:', JSON.stringify(baserowData, null, 2));
-    console.log('📦 Available fields:', Object.keys(baserowData));
-    
-    // Baserow file field structure: array with { url: "https://...", name: "..." }
-    const fileField = baserowData.field_6841;
-    
-    console.log('📎 File field value:', fileField);
-    console.log('📎 File field type:', typeof fileField);
-    console.log('📎 Is array?', Array.isArray(fileField));
-    console.log('📎 Array length:', Array.isArray(fileField) ? fileField.length : 'N/A');
-    console.log('📎 First element:', Array.isArray(fileField) && fileField.length > 0 ? fileField[0] : 'N/A');
-    
-    if (!fileField || !Array.isArray(fileField) || !fileField[0]?.url) {
-      console.error('❌ File validation failed');
-      return new Response(
-        JSON.stringify({ 
-          error: 'File not found in Baserow',
-          debug: {
-            row_id: backup.baserow_row_id,
-            table_id: baserowTableId,
-            file_field_exists: !!fileField,
-            file_field_type: typeof fileField,
-            file_field_is_array: Array.isArray(fileField),
-            file_field_value: fileField,
-            available_fields: Object.keys(baserowData)
-          }
-        }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    console.log('✅ File found in Baserow:', fileField[0].url);
-
-    const downloadUrl = fileField[0].url;
+    const downloadUrl = signedData.signedUrl;
 
     // Log download
     await supabase.from('backup_logs').insert({

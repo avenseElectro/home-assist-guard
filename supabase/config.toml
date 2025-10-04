@@ -2,6 +2,3 @@ project_id = "iagsshcczgmjdrdweirb"
 
 [functions.backup-upload]
 verify_jwt = false
-
-[functions.backup-upload-baserow]
-verify_jwt = false
