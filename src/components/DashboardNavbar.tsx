@@ -1,9 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Shield } from "lucide-react";
+import { Shield, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 
-export function DashboardNavbar() {
+interface DashboardNavbarProps {
+  alertCount?: number;
+}
+
+export function DashboardNavbar({ alertCount = 0 }: DashboardNavbarProps) {
   const { signOut } = useAuth();
 
   return (
@@ -17,6 +22,19 @@ export function DashboardNavbar() {
         </Link>
         
         <div className="flex items-center gap-3">
+          {alertCount > 0 && (
+            <Link to="/dashboard">
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="w-5 h-5" />
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs"
+                >
+                  {alertCount}
+                </Badge>
+              </Button>
+            </Link>
+          )}
           <Button variant="ghost" onClick={signOut}>
             Sair
           </Button>

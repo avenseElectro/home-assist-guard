@@ -8,6 +8,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { BackupTimeline } from "@/components/BackupTimeline";
+import { AlertsPanel, getAlertCount } from "@/components/AlertsPanel";
 
 interface Backup {
   id: string;
@@ -159,10 +161,11 @@ export default function Dashboard() {
 
   const storageUsed = backups.reduce((acc, b) => acc + b.size_bytes, 0) / (1024 * 1024 * 1024);
   const storageLimit = subscription?.max_storage_gb || 1;
+  const alertCount = getAlertCount(backups, subscription, storageUsed);
 
   return (
     <div className="min-h-screen gradient-subtle">
-      <Navbar />
+      <Navbar alertCount={alertCount} />
       
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
@@ -253,6 +256,15 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          <AlertsPanel 
+            backups={backups} 
+            subscription={subscription}
+            storageUsedGB={storageUsed}
+          />
+          <BackupTimeline backups={backups} />
         </div>
         
         <Card className="shadow-card">

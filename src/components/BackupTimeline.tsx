@@ -1,0 +1,131 @@
+import { CheckCircle2, XCircle, Clock, TrendingUp, TrendingDown } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+interface Backup {
+  id: string;
+  filename: string;
+  created_at: string;
+  size_bytes: number;
+  status: string;
+  ha_version: string | null;
+}
+
+interface BackupTimelineProps {
+  backups: Backup[];
+}
+
+export function BackupTimeline({ backups }: BackupTimelineProps) {
+  const recentBackups = backups.slice(0, 10);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('pt-PT', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatSize = (bytes: number) => {
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(0)} MB`;
+  };
+
+  const getSizeDiff = (currentSize: number, previousSize: number | null) => {
+    if (!previousSize) return null;
+    const diff = currentSize - previousSize;
+    const diffMB = diff / (1024 * 1024);
+    return diffMB;
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle2 className="w-5 h-5 text-primary" />;
+      case 'failed':
+        return <XCircle className="w-5 h-5 text-destructive" />;
+      default:
+        return <Clock className="w-5 h-5 text-muted-foreground" />;
+    }
+  };
+
+  if (backups.length === 0) {
+    return null;
+  }
+
+  return (
+    <Card className="shadow-card">
+      <CardHeader>
+        <CardTitle>Timeline de Backups</CardTitle>
+        <CardDescription>Histórico dos últimos 10 backups</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="relative">
+          {/* Vertical line */}
+          <div className="absolute left-[13px] top-0 bottom-0 w-0.5 bg-border" />
+
+          <div className="space-y-6">
+            {recentBackups.map((backup, index) => {
+              const previousBackup = recentBackups[index + 1];
+              const sizeDiff = previousBackup ? getSizeDiff(backup.size_bytes, previousBackup.size_bytes) : null;
+
+              return (
+                <div key={backup.id} className="relative pl-10">
+                  {/* Timeline dot */}
+                  <div className="absolute left-0 top-1 w-7 h-7 rounded-full bg-background border-2 border-border flex items-center justify-center">
+                    {getStatusIcon(backup.status)}
+                  </div>
+
+                  <div className="p-4 rounded-lg border border-border hover:bg-muted/30 transition-smooth">
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold truncate">{backup.filename}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDate(backup.created_at)}
+                        </p>
+                      </div>
+                      <Badge variant={backup.status === "completed" ? "default" : "destructive"}>
+                        {backup.status === "completed" ? "✅ Completo" : "❌ Falhou"}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-muted-foreground">
+                        📊 {formatSize(backup.size_bytes)}
+                      </span>
+
+                      {sizeDiff !== null && (
+                        <span className={`flex items-center gap-1 ${sizeDiff > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                          {sizeDiff > 0 ? (
+                            <>
+                              <TrendingUp className="w-3 h-3" />
+                              +{Math.abs(sizeDiff).toFixed(0)} MB
+                            </>
+                          ) : sizeDiff < 0 ? (
+                            <>
+                              <TrendingDown className="w-3 h-3" />
+                              -{Math.abs(sizeDiff).toFixed(0)} MB
+                            </>
+                          ) : (
+                            '0 MB'
+                          )}
+                        </span>
+                      )}
+
+                      {backup.ha_version && (
+                        <span className="text-muted-foreground">
+                          🏠 HA {backup.ha_version}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
