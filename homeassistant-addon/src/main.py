@@ -715,29 +715,6 @@ class GitHubSync:
             return False
 
 # Flask API Endpoints
-@app.route('/api/backups', methods=['GET'])
-def get_backups():
-    """Get list of backups from HomeSafe"""
-    try:
-        if not connector_instance:
-            return jsonify({'success': False, 'error': 'Connector not initialized'}), 500
-        
-        response = requests.get(
-            f'{connector_instance.api_url}/backup-list',
-            headers={'x-api-key': connector_instance.api_key},
-            timeout=30
-        )
-        
-        if response.ok:
-            data = response.json()
-            return jsonify({'success': True, 'backups': data.get('backups', [])})
-        else:
-            return jsonify({'success': False, 'error': f'API error: {response.status_code}'}), 500
-    
-    except Exception as e:
-        logger.error(f"Error fetching backups: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 @app.route('/api/backup/trigger', methods=['POST'])
 def trigger_backup():
     """Trigger a manual backup"""

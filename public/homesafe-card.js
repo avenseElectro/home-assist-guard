@@ -17,6 +17,9 @@ class HomeSafeCard extends HTMLElement {
     if (!config) {
       throw new Error('Invalid configuration');
     }
+    if (!config.api_key) {
+      throw new Error('API key is required. Please add "api_key" to your card configuration.');
+    }
     this._config = config;
     this.render();
     this.loadBackups();
@@ -27,7 +30,8 @@ class HomeSafeCard extends HTMLElement {
   }
 
   getApiUrl() {
-    return `${window.location.protocol}//${window.location.hostname}:8099`;
+    // Direct connection to HomeSafe Edge Function
+    return 'https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-list-api-key';
   }
 
   async loadBackups() {
@@ -36,22 +40,23 @@ class HomeSafeCard extends HTMLElement {
     this.render();
 
     try {
-      const response = await fetch(`${this.getApiUrl()}/api/backups`);
+      const response = await fetch(this.getApiUrl(), {
+        method: 'GET',
+        headers: {
+          'x-api-key': this._config.api_key,
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
-        throw new Error(`API returned status ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
       }
       
       const data = await response.json();
-      
-      if (data.success) {
-        this._backups = data.backups.slice(0, 5); // Show only 5 most recent
-      } else {
-        this._error = data.error || 'Failed to load backups';
-        console.error('Failed to load backups:', data.error);
-      }
+      this._backups = (data.backups || []).slice(0, 5); // Show only 5 most recent
     } catch (error) {
-      this._error = 'Cannot connect to HomeSafe API. Check if addon is running.';
+      this._error = error.message || 'Cannot connect to HomeSafe API';
       console.error('Error loading backups:', error);
     }
 
@@ -66,7 +71,7 @@ class HomeSafeCard extends HTMLElement {
     this.render();
 
     try {
-      const response = await fetch(`${this.getApiUrl()}/api/backup/trigger`, {
+      const response = await fetch('http://homeassistant.local:8099/api/backup/trigger', {
         method: 'POST'
       });
       const data = await response.json();
@@ -292,7 +297,8 @@ class HomeSafeCard extends HTMLElement {
 
   static getStubConfig() {
     return {
-      title: 'HomeSafe Backups'
+      title: 'HomeSafe Backups',
+      api_key: 'hs_live_your_api_key_here'
     };
   }
 }

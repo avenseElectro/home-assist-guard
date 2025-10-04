@@ -40,9 +40,29 @@ HomeSafe Connector is a Home Assistant add-on that provides automated backup int
 ### Authentication
 
 The add-on uses API key authentication:
-- Header: `x-api-key: hsb_YOUR_KEY_HERE`
-- Keys are generated in the HomeSafe dashboard
+- Header: `x-api-key: hs_live_YOUR_KEY_HERE`
+- Keys are generated in the HomeSafe dashboard at https://homesafe.lovable.app/api-keys
 - Each key is tied to a user account and subscription
+
+### Lovelace Card Configuration
+
+The HomeSafe Lovelace card displays your backups directly in Home Assistant. To configure it:
+
+1. **Generate an API Key**:
+   - Go to https://homesafe.lovable.app/api-keys
+   - Click "Generate New API Key"
+   - Copy the key (it starts with `hs_live_`)
+
+2. **Configure the Card**:
+   ```yaml
+   type: custom:homesafe-card
+   title: "HomeSafe Backups"
+   api_key: "hs_live_your_key_here"
+   ```
+
+3. **Reload Lovelace** or restart Home Assistant
+
+The card will now display your latest backups and allow you to trigger manual backups.
 
 ### Endpoints Used
 
