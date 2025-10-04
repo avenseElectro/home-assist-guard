@@ -114,6 +114,27 @@ serve(async (req) => {
       _backup_id: backupId
     });
 
+    // Trigger webhook for backup.deleted event
+    try {
+      await supabase.functions.invoke('webhook-trigger', {
+        body: {
+          event: 'backup.deleted',
+          user_id: user.id,
+          backup: {
+            id: backupId,
+            filename: backup.filename,
+            size_bytes: backup.size_bytes,
+            ha_version: backup.ha_version,
+            created_at: backup.created_at,
+            completed_at: backup.completed_at
+          }
+        }
+      });
+    } catch (webhookError) {
+      console.error('[backup-delete] Error triggering webhook:', webhookError);
+      // Don't fail the delete operation if webhook fails
+    }
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

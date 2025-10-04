@@ -22,6 +22,7 @@ interface AlertsPanelProps {
   backups: Backup[];
   subscription: Subscription | null;
   storageUsedGB: number;
+  webhookFailures?: number;
 }
 
 interface AlertItem {
@@ -32,7 +33,7 @@ interface AlertItem {
   icon: React.ReactNode;
 }
 
-export function AlertsPanel({ backups, subscription, storageUsedGB }: AlertsPanelProps) {
+export function AlertsPanel({ backups, subscription, storageUsedGB, webhookFailures = 0 }: AlertsPanelProps) {
   const alerts: AlertItem[] = [];
 
   // Alert 1: No backups in 48 hours
@@ -98,6 +99,17 @@ export function AlertsPanel({ backups, subscription, storageUsedGB }: AlertsPane
         icon: <Info className="h-4 w-4" />
       });
     }
+  }
+
+  // Alert 5: Webhook failures
+  if (webhookFailures > 0) {
+    alerts.push({
+      id: 'webhook-failures',
+      type: 'warning',
+      title: '⚠️ Webhook com falhas',
+      message: `${webhookFailures} webhook(s) com entregas falhadas nas últimas 24h. Verifique a configuração.`,
+      icon: <AlertTriangle className="h-4 w-4" />
+    });
   }
 
   // Success message if everything is ok

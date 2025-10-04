@@ -19,6 +19,7 @@ import ApiDocs from "./pages/ApiDocs";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
+import Webhooks from "./pages/Webhooks";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/api-keys" element={<ApiKeys />} />
+          <Route path="/webhooks" element={<Webhooks />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/upgrade" element={<Upgrade />} />
           <Route path="/subscription-success" element={<SubscriptionSuccess />} />
