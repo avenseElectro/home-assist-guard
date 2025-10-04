@@ -410,13 +410,10 @@ class HomeSafeConnector:
         
         # Step 4: Delete local backup immediately after upload (success or failure)
         if success:
-            logger.info("Upload successful, cleaning up local backup...")
+            logger.info("Upload successful, deleting local backup to save disk space...")
         else:
-            logger.warning("Upload failed, but cleaning up local backup to save disk space...")
+            logger.warning("Upload failed, deleting local backup to save disk space...")
         self.delete_local_snapshot(snapshot_slug)
-        
-        # Step 5: Maintain only 3 most recent local backups
-        self.cleanup_old_snapshots()
         
         elapsed_time = time.time() - start_time
         logger.info(f"=== Backup workflow completed in {elapsed_time:.2f}s - {'SUCCESS' if success else 'FAILED'} ===")
