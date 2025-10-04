@@ -203,14 +203,14 @@ export default function Privacy() {
                     <p>Para questões sobre esta Política de Privacidade ou exercer os seus direitos:</p>
                     <p>
                       <strong>Email:</strong>{" "}
-                      <a href="mailto:privacy@homesafe.com" className="text-primary hover:underline">
-                        privacy@homesafe.com
+                      <a href="mailto:privacy@avensat.com" className="text-primary hover:underline">
+                        privacy@avensat.com
                       </a>
                     </p>
                     <p>
                       <strong>Encarregado de Proteção de Dados:</strong>{" "}
-                      <a href="mailto:dpo@homesafe.com" className="text-primary hover:underline">
-                        dpo@homesafe.com
+                      <a href="mailto:dpo@avensat.com" className="text-primary hover:underline">
+                        dpo@avensat.com
                       </a>
                     </p>
                   </div>

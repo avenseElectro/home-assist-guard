@@ -185,10 +185,10 @@ export default function Contact() {
                           Para questões técnicas ou suporte
                         </p>
                         <a 
-                          href="mailto:support@homesafe.com"
+                          href="mailto:support@avensat.com"
                           className="text-primary hover:underline"
                         >
-                          support@homesafe.com
+                          support@avensat.com
                         </a>
                       </div>
                     </div>
@@ -281,7 +281,7 @@ export default function Contact() {
                 <div className="p-6 rounded-lg bg-card border border-border">
                   <h3 className="font-semibold mb-2">Como obtenho suporte técnico?</h3>
                   <p className="text-sm text-muted-foreground">
-                    Envie-nos um email para support@homesafe.com ou abra um issue no GitHub. 
+                    Envie-nos um email para support@avensat.com ou abra um issue no GitHub. 
                     Clientes Pro e Business têm suporte prioritário.
                   </p>
                 </div>

@@ -162,8 +162,8 @@ export default function Terms() {
                   <h2 className="text-2xl font-bold mb-4">12. Contacto</h2>
                   <p className="text-muted-foreground">
                     Para questões sobre estes Termos, contacte-nos em: <br />
-                    <a href="mailto:support@homesafe.com" className="text-primary hover:underline">
-                      support@homesafe.com
+                    <a href="mailto:support@avensat.com" className="text-primary hover:underline">
+                      support@avensat.com
                     </a>
                   </p>
                 </section>

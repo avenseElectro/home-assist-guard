@@ -506,57 +506,63 @@ export default function Docs() {
               <div className="bg-card border border-border rounded-lg p-6">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="px-2 py-1 bg-primary text-primary-foreground rounded text-xs font-semibold">POST</span>
-                  <code className="text-sm">/api/backups</code>
+                  <code className="text-sm">/backup-upload</code>
                 </div>
-                <p className="text-sm mb-3">Upload de um novo backup</p>
+                <p className="text-sm mb-3">Upload de um novo backup (multipart chunked)</p>
                 <CodeBlock 
-                  code={`curl -X POST https://api.homesafe.com/v1/backups \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
-  -F "file=@backup.tar"`}
+                  code={`# Inicializar upload
+curl -X POST https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-upload?action=init \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"file_size": 1048576, "ha_version": "2024.1.0"}'`}
                 />
               </div>
 
               <div className="bg-card border border-border rounded-lg p-6">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs font-semibold">GET</span>
-                  <code className="text-sm">/api/backups</code>
+                  <code className="text-sm">/backup-list</code>
                 </div>
                 <p className="text-sm mb-3">Listar todos os backups</p>
                 <CodeBlock 
-                  code={`curl https://api.homesafe.com/v1/backups \\
-  -H "Authorization: Bearer YOUR_API_KEY"`}
+                  code={`curl https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-list \\
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN"`}
                 />
               </div>
 
               <div className="bg-card border border-border rounded-lg p-6">
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs font-semibold">GET</span>
-                  <code className="text-sm">/api/backups/:id/download</code>
+                  <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs font-semibold">POST</span>
+                  <code className="text-sm">/backup-download</code>
                 </div>
                 <p className="text-sm mb-3">Download de um backup específico</p>
                 <CodeBlock 
-                  code={`curl https://api.homesafe.com/v1/backups/123/download \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+                  code={`curl -X POST https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-download \\
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"backupId": "uuid-do-backup"}' \\
   -o backup.tar`}
                 />
               </div>
 
               <div className="bg-card border border-border rounded-lg p-6">
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="px-2 py-1 bg-destructive text-destructive-foreground rounded text-xs font-semibold">DELETE</span>
-                  <code className="text-sm">/api/backups/:id</code>
+                  <span className="px-2 py-1 bg-destructive text-destructive-foreground rounded text-xs font-semibold">POST</span>
+                  <code className="text-sm">/backup-delete</code>
                 </div>
                 <p className="text-sm mb-3">Eliminar um backup</p>
                 <CodeBlock 
-                  code={`curl -X DELETE https://api.homesafe.com/v1/backups/123 \\
-  -H "Authorization: Bearer YOUR_API_KEY"`}
+                  code={`curl -X POST https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-delete \\
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"backupId": "uuid-do-backup"}'`}
                 />
               </div>
             </div>
 
             <h3 className="text-xl font-semibold mt-8">Autenticação</h3>
-            <p>Todas as requisições devem incluir o header <code className="text-sm bg-muted px-2 py-1 rounded">Authorization</code> com o Bearer token:</p>
-            <CodeBlock code='Authorization: Bearer YOUR_API_KEY' />
+            <p>As requisições do add-on usam o header <code className="text-sm bg-muted px-2 py-1 rounded">x-api-key</code>. Para requisições da web, use o token de sessão no header <code className="text-sm bg-muted px-2 py-1 rounded">Authorization</code>:</p>
+            <CodeBlock code='x-api-key: YOUR_API_KEY' />
 
             <h3 className="text-xl font-semibold mt-8">Rate Limits</h3>
             <ul className="list-disc list-inside space-y-2 ml-4">
