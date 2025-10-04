@@ -10,6 +10,7 @@ class HomeSafeCard extends HTMLElement {
     this._config = {};
     this._backups = [];
     this._loading = true;
+    this._error = null;
   }
 
   setConfig(config) {
@@ -27,18 +28,26 @@ class HomeSafeCard extends HTMLElement {
 
   async loadBackups() {
     this._loading = true;
+    this._error = null;
     this.render();
 
     try {
       const response = await fetch('http://localhost:8099/api/backups');
+      
+      if (!response.ok) {
+        throw new Error(`API returned status ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data.success) {
         this._backups = data.backups.slice(0, 5); // Show only 5 most recent
       } else {
+        this._error = data.error || 'Failed to load backups';
         console.error('Failed to load backups:', data.error);
       }
     } catch (error) {
+      this._error = 'Cannot connect to HomeSafe API. Check if addon is running.';
       console.error('Error loading backups:', error);
     }
 
@@ -93,24 +102,24 @@ class HomeSafeCard extends HTMLElement {
   getStatusIcon(status) {
     switch (status) {
       case 'completed':
-        return '✅';
+        return '&#9989;'; // ✅
       case 'uploading':
-        return '⏳';
+        return '&#8987;'; // ⏳
       case 'failed':
-        return '❌';
+        return '&#10060;'; // ❌
       default:
-        return '❓';
+        return '&#10067;'; // ❓
     }
   }
 
   getTriggerBadge(trigger) {
     switch (trigger) {
       case 'manual':
-        return '👤 Manual';
+        return '&#128100; Manual'; // 👤
       case 'scheduled':
-        return '⏰ Agendado';
+        return '&#9200; Agendado'; // ⏰
       case 'pre_update':
-        return '🎯 Pré-Update';
+        return '&#127919; Pré-Update'; // 🎯
       default:
         return trigger || 'N/A';
     }
@@ -221,17 +230,25 @@ class HomeSafeCard extends HTMLElement {
             ${this._loading ? 'disabled' : ''}
             onclick="this.getRootNode().host.triggerBackup()"
           >
-            ${this._loading ? '⏳ A carregar...' : '🔄 Backup Manual'}
+            ${this._loading ? '&#8987; A carregar...' : '&#128260; Backup Manual'}
           </button>
         </div>
 
         ${this._loading ? `
           <div class="loading">
-            <div>⏳ A carregar backups...</div>
+            <div>&#8987; A carregar backups...</div>
+          </div>
+        ` : this._error ? `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#9888;</div>
+            <div style="color: var(--error-color, #e74c3c);">${this._error}</div>
+            <div style="margin-top: 8px; font-size: 0.9rem;">
+              Verifique se o addon HomeSafe está em execução
+            </div>
           </div>
         ` : this._backups.length === 0 ? `
           <div class="empty-state">
-            <div class="empty-state-icon">📦</div>
+            <div class="empty-state-icon">&#128230;</div>
             <div>Nenhum backup encontrado</div>
             <div style="margin-top: 8px; font-size: 0.9rem;">
               Clique em "Backup Manual" para criar o primeiro backup
@@ -244,10 +261,10 @@ class HomeSafeCard extends HTMLElement {
                 <div class="backup-info">
                   <div class="backup-name">${backup.filename || 'Backup sem nome'}</div>
                   <div class="backup-meta">
-                    <span>📅 ${this.formatDate(backup.created_at)}</span>
-                    <span>💾 ${this.formatSize(backup.size_bytes)}</span>
+                    <span>&#128197; ${this.formatDate(backup.created_at)}</span>
+                    <span>&#128190; ${this.formatSize(backup.size_bytes)}</span>
                     <span class="trigger-badge">${this.getTriggerBadge(backup.backup_trigger)}</span>
-                    ${backup.ha_version ? `<span>🏠 HA ${backup.ha_version}</span>` : ''}
+                    ${backup.ha_version ? `<span>&#127968; HA ${backup.ha_version}</span>` : ''}
                   </div>
                 </div>
                 <div class="backup-status">

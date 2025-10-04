@@ -7,6 +7,7 @@ import requests
 from datetime import datetime, timezone
 from pathlib import Path
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from threading import Thread
 
 # Setup logging
@@ -26,6 +27,13 @@ SUPERVISOR_URL = 'http://supervisor'
 
 # Flask app for API
 app = Flask(__name__)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 connector_instance = None
 
 class HomeSafeConnector:
