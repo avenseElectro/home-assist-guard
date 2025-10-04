@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Webhook as WebhookIcon, Plus, Trash2, Edit, TestTube, Activity } from "lucide-react";
 import { useWebhooks, useCreateWebhook, useUpdateWebhook, useDeleteWebhook, useTestWebhook, useWebhookLogs, CreateWebhookInput } from "@/hooks/useWebhooks";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Separator } from "@/components/ui/separator";
 
 const AVAILABLE_EVENTS = [
   { id: 'backup.completed', label: 'Backup Concluído', icon: '✅' },
@@ -68,92 +69,98 @@ export default function Webhooks() {
       <DashboardNavbar />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">🔗 Webhooks</h1>
-            <p className="text-muted-foreground">
-              Configure webhooks para receber notificações em tempo real sobre eventos de backup
-            </p>
-          </div>
-          
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Webhook
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <form onSubmit={handleSubmit}>
-                <DialogHeader>
-                  <DialogTitle>Criar Webhook</DialogTitle>
-                  <DialogDescription>
-                    Configure um novo webhook para receber notificações de eventos
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome</Label>
-                    <Input
-                      id="name"
-                      placeholder="Ex: Notificações Discord"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="url">URL do Webhook</Label>
-                    <Input
-                      id="url"
-                      type="url"
-                      placeholder="https://exemplo.com/webhook"
-                      value={formData.webhook_url}
-                      onChange={(e) => setFormData({ ...formData, webhook_url: e.target.value })}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Eventos</Label>
-                    {AVAILABLE_EVENTS.map((event) => (
-                      <div key={event.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={event.id}
-                          checked={formData.events.includes(event.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setFormData({ ...formData, events: [...formData.events, event.id] });
-                            } else {
-                              setFormData({ ...formData, events: formData.events.filter(e => e !== event.id) });
-                            }
-                          }}
-                        />
-                        <Label htmlFor={event.id} className="cursor-pointer">
-                          {event.icon} {event.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="enabled"
-                      checked={formData.enabled}
-                      onCheckedChange={(checked) => setFormData({ ...formData, enabled: checked })}
-                    />
-                    <Label htmlFor="enabled">Ativo</Label>
-                  </div>
+        <div className="mb-8">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg gradient-primary flex items-center justify-center">
+                  <WebhookIcon className="w-6 h-6 text-primary-foreground" />
                 </div>
-                
-                <DialogFooter>
-                  <Button type="submit">Criar Webhook</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                Webhooks
+              </h1>
+              <p className="text-muted-foreground">Configure notificações em tempo real sobre eventos de backup</p>
+            </div>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" variant="hero">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Webhook
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <form onSubmit={handleSubmit}>
+                  <DialogHeader>
+                    <DialogTitle>Criar Webhook</DialogTitle>
+                    <DialogDescription>
+                      Configure um novo webhook para receber notificações de eventos
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nome</Label>
+                      <Input
+                        id="name"
+                        placeholder="Ex: Notificações Discord"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="url">URL do Webhook</Label>
+                      <Input
+                        id="url"
+                        type="url"
+                        placeholder="https://exemplo.com/webhook"
+                        value={formData.webhook_url}
+                        onChange={(e) => setFormData({ ...formData, webhook_url: e.target.value })}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Eventos</Label>
+                      {AVAILABLE_EVENTS.map((event) => (
+                        <div key={event.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={event.id}
+                            checked={formData.events.includes(event.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setFormData({ ...formData, events: [...formData.events, event.id] });
+                              } else {
+                                setFormData({ ...formData, events: formData.events.filter(e => e !== event.id) });
+                              }
+                            }}
+                          />
+                          <Label htmlFor={event.id} className="cursor-pointer">
+                            {event.icon} {event.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="enabled"
+                        checked={formData.enabled}
+                        onCheckedChange={(checked) => setFormData({ ...formData, enabled: checked })}
+                      />
+                      <Label htmlFor="enabled">Ativo</Label>
+                    </div>
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button type="submit">Criar Webhook</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Separator className="my-8" />
         </div>
 
         {isLoading ? (
@@ -207,7 +214,7 @@ function WebhookCard({ webhook, onEdit, onDelete, onToggle, onTest }: any) {
   };
 
   return (
-    <Card>
+    <Card className="hover-scale">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -228,7 +235,7 @@ function WebhookCard({ webhook, onEdit, onDelete, onToggle, onTest }: any) {
       </CardHeader>
       
       <CardContent>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Switch
             checked={webhook.enabled}
             onCheckedChange={(checked) => onToggle(webhook.id, checked)}
@@ -239,64 +246,19 @@ function WebhookCard({ webhook, onEdit, onDelete, onToggle, onTest }: any) {
           
           <div className="flex-1" />
           
-          <Collapsible open={isLogsOpen} onOpenChange={setIsLogsOpen}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Activity className="h-4 w-4 mr-2" />
-                Logs {logs && logs.length > 0 && `(${logs.length})`}
-              </Button>
-            </CollapsibleTrigger>
-            
-            <CollapsibleContent className="mt-4">
-              {logs && logs.length > 0 ? (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {logs.map((log) => (
-                    <div key={log.id} className="text-sm p-2 rounded bg-muted">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium">{log.event_type}</span>
-                        <Badge variant={log.status === 'success' ? 'default' : 'destructive'}>
-                          {log.status}
-                        </Badge>
-                      </div>
-                      {log.response_code && (
-                        <div className="text-muted-foreground">HTTP {log.response_code}</div>
-                      )}
-                      {log.error_message && (
-                        <div className="text-destructive text-xs">{log.error_message}</div>
-                      )}
-                      <div className="text-muted-foreground text-xs mt-1">
-                        {new Date(log.created_at).toLocaleString('pt-PT')}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Ainda não há logs para este webhook</p>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
-          
-          <Button variant="ghost" size="sm" onClick={() => onTest(webhook.id)}>
-            <TestTube className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => onTest(webhook.id)}>
+            <TestTube className="h-4 w-4 mr-2" />
+            Testar
           </Button>
           
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={() => onEdit(webhook)}>
-                <Edit className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Editar Webhook</DialogTitle>
-              </DialogHeader>
-              <p>Editar webhook (implementar formulário)</p>
-            </DialogContent>
-          </Dialog>
+          <Button variant="outline" size="sm" onClick={() => onEdit(webhook)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <Button variant="outline" size="sm">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </AlertDialogTrigger>

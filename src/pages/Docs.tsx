@@ -5,7 +5,7 @@ import { DocsSection } from "@/components/docs/DocsSection";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { InstallationSteps } from "@/components/docs/InstallationSteps";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2, Shield, Clock, Database } from "lucide-react";
+import { AlertCircle, CheckCircle2, Shield, Clock, Database, XCircle, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -271,6 +271,249 @@ export default function Docs() {
               <li>Clique no separador 'Log'</li>
               <li>Veja informações sobre backups criados, erros e status</li>
             </ul>
+          </DocsSection>
+
+          {/* Smart Scheduling */}
+          <DocsSection id="smart-scheduling" title="Smart Scheduling - Backups Inteligentes">
+            <div className="p-6 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 mb-6">
+              <h3 className="text-xl font-semibold mb-3">Proteção Automática Antes de Atualizações</h3>
+              <p className="text-lg">
+                O HomeSafe cria automaticamente um backup <strong>antes de cada atualização</strong> do Home Assistant, 
+                protegendo as suas configurações contra problemas durante updates.
+              </p>
+            </div>
+
+            <Alert className="mt-6">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Ativação Automática:</strong> Esta funcionalidade está ativa por padrão. Não precisa de configurar nada!
+              </AlertDescription>
+            </Alert>
+
+            <h3 className="text-xl font-semibold mt-8">Como Funciona</h3>
+            <ol className="list-decimal list-inside space-y-2 ml-4 mt-4">
+              <li>O add-on verifica a versão do Home Assistant a cada hora</li>
+              <li>Quando detecta uma mudança de versão, cria um backup automaticamente</li>
+              <li>O backup é marcado como <strong>"Pré-Update"</strong> 🎯</li>
+              <li>Aparece no dashboard com destaque visual</li>
+            </ol>
+
+            <h3 className="text-xl font-semibold mt-8">Tipos de Backup</h3>
+            <div className="grid md:grid-cols-3 gap-4 my-6">
+              <div className="p-4 rounded-lg bg-card border border-border">
+                <h4 className="font-semibold mb-2 text-lg">🎯 Pré-Update</h4>
+                <p className="text-sm">Criado automaticamente antes de atualizações do Home Assistant</p>
+              </div>
+              <div className="p-4 rounded-lg bg-card border border-border">
+                <h4 className="font-semibold mb-2 text-lg">⏰ Agendado</h4>
+                <p className="text-sm">Backup diário automático no horário configurado</p>
+              </div>
+              <div className="p-4 rounded-lg bg-card border border-border">
+                <h4 className="font-semibold mb-2 text-lg">✋ Manual</h4>
+                <p className="text-sm">Criado manualmente via API ou add-on</p>
+              </div>
+            </div>
+
+            <h4 className="font-semibold mt-6">Exemplo de Logs:</h4>
+            <CodeBlock 
+              code={`[INFO] Checking Home Assistant version...
+[INFO] Version changed: 2024.9.3 → 2024.10.1
+[INFO] Creating pre-update backup...
+[INFO] Snapshot created successfully
+[INFO] Uploading backup to cloud...
+[SUCCESS] Backup completed: backup-pre-update-20251004.tar`}
+            />
+
+            <Alert className="mt-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Nota:</strong> Os backups pré-update não contam para o limite de backups agendados, 
+                garantindo que sempre tenha uma cópia de segurança antes de updates.
+              </AlertDescription>
+            </Alert>
+          </DocsSection>
+
+          {/* Webhooks */}
+          <DocsSection id="webhooks" title="Webhooks - Notificações em Tempo Real">
+            <div className="p-6 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 mb-6">
+              <p className="text-lg">
+                Configure webhooks para receber notificações instantâneas sobre eventos de backup 
+                em serviços como <strong>Discord</strong>, <strong>Slack</strong>, <strong>Telegram</strong> ou 
+                qualquer endpoint HTTP personalizado.
+              </p>
+            </div>
+
+            <h3 className="text-xl font-semibold mt-8">Eventos Disponíveis</h3>
+            
+            <div className="space-y-4 mt-6">
+              <div className="p-4 rounded-lg bg-card border-2 border-primary/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="w-5 h-5 text-primary" />
+                  <h4 className="font-semibold text-lg">backup.completed</h4>
+                </div>
+                <p className="text-sm">Disparado quando um backup é concluído com sucesso</p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-card border-2 border-destructive/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <XCircle className="w-5 h-5 text-destructive" />
+                  <h4 className="font-semibold text-lg">backup.failed</h4>
+                </div>
+                <p className="text-sm">Disparado quando um backup falha</p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-card border-2 border-border">
+                <div className="flex items-center gap-2 mb-2">
+                  <Trash2 className="w-5 h-5" />
+                  <h4 className="font-semibold text-lg">backup.deleted</h4>
+                </div>
+                <p className="text-sm">Disparado quando um backup é eliminado</p>
+              </div>
+            </div>
+
+            <h3 className="text-xl font-semibold mt-10">Configurar um Webhook</h3>
+            
+            <InstallationSteps
+              steps={[
+                {
+                  title: "Aceder à Página de Webhooks",
+                  description: "No dashboard, clique em 'Webhooks' no menu superior"
+                },
+                {
+                  title: "Criar Novo Webhook",
+                  description: "Clique em '+ Novo Webhook' e preencha o formulário com nome e URL"
+                },
+                {
+                  title: "Selecionar Eventos",
+                  description: "Escolha quais eventos deseja receber (pode selecionar múltiplos)"
+                },
+                {
+                  title: "Testar Webhook",
+                  description: "Use o botão 'Test' para enviar um ping de teste ao endpoint"
+                }
+              ]}
+            />
+
+            <h3 className="text-xl font-semibold mt-10">Formato do Payload</h3>
+            <p>Os webhooks recebem um POST request com JSON no seguinte formato:</p>
+
+            <CodeBlock 
+              code={`{
+  "event": "backup.completed",
+  "timestamp": "2025-10-04T22:30:00Z",
+  "backup": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "filename": "backup-20251004-223000.tar",
+    "size_bytes": 1234567890,
+    "ha_version": "2024.10.1",
+    "backup_trigger": "pre_update",
+    "created_at": "2025-10-04T22:15:00Z",
+    "completed_at": "2025-10-04T22:30:00Z"
+  },
+  "user_id": "user-uuid-here"
+}`}
+              language="json"
+            />
+
+            <h3 className="text-xl font-semibold mt-10">Exemplos de Integração</h3>
+
+            <h4 className="font-semibold mt-6">🎮 Discord</h4>
+            <p className="text-sm mb-3">Crie um webhook no seu servidor Discord (Server Settings → Integrations → Webhooks):</p>
+            <CodeBlock 
+              code={`# URL do Webhook Discord
+https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_TOKEN
+
+# O payload será automaticamente formatado para Discord
+# Receberá mensagens bonitas com embed cards`}
+            />
+
+            <h4 className="font-semibold mt-6">💬 Slack</h4>
+            <p className="text-sm mb-3">Configure um Incoming Webhook na sua workspace Slack:</p>
+            <CodeBlock 
+              code={`# URL do Incoming Webhook Slack
+https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+
+# Configure no canal desejado via Slack Apps
+# As mensagens aparecerão formatadas automaticamente`}
+            />
+
+            <h4 className="font-semibold mt-6">📱 Telegram</h4>
+            <CodeBlock 
+              code={`# Crie um bot com @BotFather e obtenha o token
+# Use um serviço intermediário ou API própria
+https://api.telegram.org/bot<YOUR_BOT_TOKEN>/sendMessage`}
+            />
+
+            <h4 className="font-semibold mt-6">🔧 Endpoint Personalizado (Node.js)</h4>
+            <CodeBlock 
+              code={`// Servidor Node.js recebendo webhooks
+const express = require('express');
+const app = express();
+
+app.use(express.json());
+
+app.post('/webhook/homesafe', (req, res) => {
+  const { event, backup, timestamp } = req.body;
+  
+  console.log(\`[Webhook] Event: \${event}\`);
+  
+  if (event === 'backup.completed') {
+    console.log(\`✅ Backup \${backup.filename} concluído!\`);
+    console.log(\`   Tamanho: \${(backup.size_bytes / 1024 / 1024).toFixed(2)} MB\`);
+    console.log(\`   Versão HA: \${backup.ha_version}\`);
+    
+    // Sua lógica personalizada aqui
+    // Ex: enviar email, atualizar dashboard, etc
+  }
+  
+  if (event === 'backup.failed') {
+    console.error(\`❌ Backup falhou!\`);
+    // Alertar admin
+  }
+  
+  res.status(200).json({ received: true });
+});
+
+app.listen(3000, () => {
+  console.log('Webhook server running on port 3000');
+});`}
+              language="javascript"
+            />
+
+            <Alert className="mt-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Dica de Segurança:</strong> Sempre valide os webhooks recebidos e use HTTPS. 
+                Considere adicionar autenticação via headers customizados se o endpoint for público.
+              </AlertDescription>
+            </Alert>
+
+            <h3 className="text-xl font-semibold mt-10">Monitorização e Logs</h3>
+            <p>Na página de Webhooks do dashboard, pode monitorizar:</p>
+            <ul className="list-disc list-inside space-y-2 ml-4 mt-4">
+              <li><strong>Status das entregas</strong> - Sucesso ou falha de cada envio</li>
+              <li><strong>Códigos HTTP</strong> - Response codes do endpoint</li>
+              <li><strong>Mensagens de erro</strong> - Detalhes sobre falhas</li>
+              <li><strong>Timestamps</strong> - Quando cada webhook foi disparado</li>
+              <li><strong>Payload enviado</strong> - Visualizar o JSON completo</li>
+            </ul>
+
+            <h3 className="text-xl font-semibold mt-10">Retentativas Automáticas</h3>
+            <p>Se um webhook falhar (timeout, erro 5xx), o sistema:</p>
+            <ul className="list-disc list-inside space-y-2 ml-4 mt-4">
+              <li>Tenta novamente até 3 vezes com backoff exponencial</li>
+              <li>Aguarda 1s, depois 5s, depois 15s entre tentativas</li>
+              <li>Marca o webhook com "⚠️ Com erros" se todas falharem</li>
+              <li>Envia alerta no dashboard sobre webhooks com falhas</li>
+            </ul>
+
+            <Alert className="mt-6 border-amber-500">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <AlertDescription>
+                <strong>Rate Limits:</strong> Webhooks são disparados imediatamente após eventos. 
+                Certifique-se que o seu endpoint consegue lidar com múltiplas requisições em sequência.
+              </AlertDescription>
+            </Alert>
           </DocsSection>
 
           {/* Gestão de Backups */}
@@ -558,6 +801,20 @@ curl -X POST https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-upload
   -d '{"backupId": "uuid-do-backup"}'`}
                 />
               </div>
+
+              <div className="bg-card border border-border rounded-lg p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="px-2 py-1 bg-primary text-primary-foreground rounded text-xs font-semibold">POST</span>
+                  <code className="text-sm">/webhook-test</code>
+                </div>
+                <p className="text-sm mb-3">Testar um webhook (envia ping)</p>
+                <CodeBlock 
+                  code={`curl -X POST https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/webhook-test \\
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"webhook_id": "uuid-do-webhook"}'`}
+                />
+              </div>
             </div>
 
             <h3 className="text-xl font-semibold mt-8">Autenticação</h3>
@@ -636,6 +893,40 @@ curl -X POST https://iagsshcczgmjdrdweirb.supabase.co/functions/v1/backup-upload
                 <p className="text-sm">
                   O add-on precisa de conexão à internet para enviar backups para a cloud. 
                   Se estiver offline, tentará novamente automaticamente quando a conexão for restaurada.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">📌 Como funcionam os backups Pré-Update?</h4>
+                <p className="text-sm">
+                  O add-on verifica a versão do Home Assistant a cada hora. Quando detecta uma atualização, 
+                  cria automaticamente um backup de segurança antes que as mudanças sejam aplicadas. 
+                  Esta funcionalidade está ativa por padrão.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">📌 Posso desativar os backups Pré-Update?</h4>
+                <p className="text-sm">
+                  Sim, mas não é recomendado. Esta funcionalidade protege contra problemas durante atualizações. 
+                  Para desativar, configure <code className="text-sm bg-muted px-1 py-0.5 rounded">pre_update_backup: false</code> no add-on.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">📌 Os webhooks são seguros?</h4>
+                <p className="text-sm">
+                  Sim! Os webhooks são enviados via HTTPS. No entanto, certifique-se de que o endpoint 
+                  destino também é seguro (HTTPS) e não exponha dados sensíveis publicamente. 
+                  Considere adicionar autenticação no seu endpoint.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">📌 Quantos webhooks posso configurar?</h4>
+                <p className="text-sm">
+                  Não há limite no número de webhooks. Pode configurar múltiplos endpoints para receber 
+                  notificações em diferentes serviços simultaneamente (Discord, Slack, sistemas custom, etc.).
                 </p>
               </div>
             </div>

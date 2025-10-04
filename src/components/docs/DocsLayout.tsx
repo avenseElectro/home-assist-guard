@@ -24,6 +24,8 @@ const sidebarItems: DocsSidebarItem[] = [
   { title: "Instalação", href: "#instalacao", icon: <Download className="w-4 h-4" /> },
   { title: "Configuração", href: "#configuracao", icon: <Settings className="w-4 h-4" /> },
   { title: "Utilização", href: "#utilizacao", icon: <Play className="w-4 h-4" /> },
+  { title: "🎯 Smart Scheduling", href: "#smart-scheduling" },
+  { title: "🔗 Webhooks", href: "#webhooks" },
   { title: "Gestão de Backups", href: "#gestao", icon: <Database className="w-4 h-4" /> },
   { title: "Troubleshooting", href: "#troubleshooting", icon: <AlertCircle className="w-4 h-4" /> },
   { title: "Planos e Limites", href: "#planos", icon: <CreditCard className="w-4 h-4" /> },

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { DashboardNavbar as Navbar } from "@/components/DashboardNavbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Calendar, HardDrive, Key, Download } from "lucide-react";
+import { Trash2, Calendar, HardDrive, Key, Download, Zap, Webhook } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [backups, setBackups] = useState<Backup[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [webhooksCount, setWebhooksCount] = useState({ active: 0, total: 0 });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -67,6 +68,19 @@ export default function Dashboard() {
 
       if (subError) throw subError;
       setSubscription(subData);
+
+      // Fetch webhooks count
+      const { data: webhooksData, error: webhooksError } = await supabase
+        .from("webhook_configs" as any)
+        .select("id, enabled")
+        .eq("user_id", user!.id);
+
+      if (!webhooksError && webhooksData) {
+        setWebhooksCount({
+          active: webhooksData.filter((w: any) => w.enabled).length,
+          total: webhooksData.length
+        });
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Erro ao carregar dados");
@@ -182,7 +196,7 @@ export default function Dashboard() {
           </Link>
         </div>
         
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -219,6 +233,39 @@ export default function Dashboard() {
                   <p className="text-sm text-muted-foreground">-</p>
                 </>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card hover-scale">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-primary" />
+                Smart Scheduling
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold mb-1">
+                {backups.filter(b => b.backup_trigger === 'pre_update').length}
+              </div>
+              <p className="text-sm text-muted-foreground">Backups Pré-Update</p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card hover-scale">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Webhook className="w-5 h-5 text-primary" />
+                Webhooks
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold mb-1">{webhooksCount.active}</div>
+              <p className="text-sm text-muted-foreground mb-3">{webhooksCount.total} configurados</p>
+              <Link to="/webhooks">
+                <Button variant="outline" size="sm" className="w-full">
+                  Gerir
+                </Button>
+              </Link>
             </CardContent>
           </Card>
           

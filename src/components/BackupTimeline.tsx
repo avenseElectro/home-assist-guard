@@ -1,5 +1,7 @@
+import { useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { CheckCircle2, XCircle, Clock, TrendingUp, TrendingDown } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 interface Backup {
@@ -17,7 +19,13 @@ interface BackupTimelineProps {
 }
 
 export function BackupTimeline({ backups }: BackupTimelineProps) {
-  const recentBackups = backups.slice(0, 10);
+  const [filter, setFilter] = useState<string>('all');
+  
+  const filteredBackups = filter === 'all' 
+    ? backups 
+    : backups.filter(b => b.backup_trigger === filter);
+  
+  const recentBackups = filteredBackups.slice(0, 10);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('pt-PT', {
@@ -71,8 +79,37 @@ export function BackupTimeline({ backups }: BackupTimelineProps) {
   return (
     <Card className="shadow-card">
       <CardHeader>
-        <CardTitle>Timeline de Backups</CardTitle>
-        <CardDescription>Histórico dos últimos 10 backups</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Timeline de Backups</CardTitle>
+            <CardDescription>Histórico dos últimos 10 backups</CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={filter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('all')}
+            >
+              Todos
+            </Button>
+            <Button
+              variant={filter === 'pre_update' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('pre_update')}
+              title="Backups antes de atualizações"
+            >
+              🎯
+            </Button>
+            <Button
+              variant={filter === 'scheduled' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('scheduled')}
+              title="Backups agendados"
+            >
+              ⏰
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="relative">
