@@ -1,33 +1,36 @@
 import iconBackup from "@/assets/icon-backup.png";
 import iconRestore from "@/assets/icon-restore.png";
 import iconSecurity from "@/assets/icon-security.png";
-
-const features = [
-  {
-    icon: iconBackup,
-    title: "Backups Automáticos",
-    description: "Configure backups automáticos diários, semanais ou mensais da sua configuração do Home Assistant."
-  },
-  {
-    icon: iconRestore,
-    title: "Restauro Rápido",
-    description: "Restaure a sua configuração em segundos com um simples clique. Mantém histórico completo de versões."
-  },
-  {
-    icon: iconSecurity,
-    title: "Segurança Total",
-    description: "Dados encriptados em repouso e em trânsito. Armazenamento S3-compatible redundante e confiável."
-  }
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function Features() {
+  const { t } = useLanguage();
+  
+  const features = [
+    {
+      icon: iconBackup,
+      title: t('features.backup.title'),
+      description: t('features.backup.description')
+    },
+    {
+      icon: iconRestore,
+      title: t('features.restore.title'),
+      description: t('features.restore.description')
+    },
+    {
+      icon: iconSecurity,
+      title: t('features.security.title'),
+      description: t('features.security.description')
+    }
+  ];
+  
   return (
     <section className="py-24 px-4">
       <div className="container mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl mb-4">Tudo o que Precisa</h2>
+          <h2 className="text-4xl md:text-5xl mb-4">{t('features.title')}</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Proteção completa para a sua configuração do Home Assistant
+            {t('features.subtitle')}
           </p>
         </div>
         

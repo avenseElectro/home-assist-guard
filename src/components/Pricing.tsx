@@ -5,66 +5,47 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-
-const plans = [
-  {
-    name: "Free",
-    price: "0€",
-    period: "para sempre",
-    description: "Ideal para testar",
-    priceId: null,
-    features: [
-      "1 backup por semana",
-      "Retenção de 7 dias",
-      "100 MB de armazenamento",
-      "1 instância do Home Assistant",
-      "Suporte por email"
-    ],
-    cta: "Começar Grátis",
-    popular: false
-  },
-  {
-    name: "Pro",
-    price: "5€",
-    period: "/mês",
-    description: "Para entusiastas",
-    priceId: "price_1SEWmFFaQO1xoKujXe8dfKie",
-    features: [
-      "Backups diários automáticos",
-      "Retenção de 90 dias",
-      "5 GB de armazenamento",
-      "2 instâncias do Home Assistant",
-      "Suporte prioritário",
-      "Webhook notifications"
-    ],
-    cta: "Subscrever Pro",
-    popular: true
-  },
-  {
-    name: "Business",
-    price: "15€",
-    period: "/mês",
-    description: "Para profissionais",
-    priceId: "price_1SEWmQFaQO1xoKujv3sv0jmu",
-    features: [
-      "Backups ilimitados",
-      "Retenção de 180 dias",
-      "20 GB de armazenamento",
-      "5 instâncias do Home Assistant",
-      "Suporte dedicado 24/7",
-      "API completa",
-      "Relatórios e auditoria"
-    ],
-    cta: "Subscrever Business",
-    popular: false
-  }
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function Pricing() {
   const [loading, setLoading] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
+  
+  const plans = [
+    {
+      name: t('pricing.free.name'),
+      price: t('pricing.free.price'),
+      period: t('pricing.free.period'),
+      description: t('pricing.free.description'),
+      priceId: null,
+      features: t('pricing.free.features') as unknown as string[],
+      cta: t('pricing.free.cta'),
+      popular: false
+    },
+    {
+      name: t('pricing.pro.name'),
+      price: t('pricing.pro.price'),
+      period: t('pricing.pro.period'),
+      description: t('pricing.pro.description'),
+      priceId: "price_1SEWmFFaQO1xoKujXe8dfKie",
+      features: t('pricing.pro.features') as unknown as string[],
+      cta: t('pricing.pro.cta'),
+      popular: true
+    },
+    {
+      name: t('pricing.business.name'),
+      price: t('pricing.business.price'),
+      period: t('pricing.business.period'),
+      description: t('pricing.business.description'),
+      priceId: "price_1SEWmQFaQO1xoKujv3sv0jmu",
+      features: t('pricing.business.features') as unknown as string[],
+      cta: t('pricing.business.cta'),
+      popular: false
+    }
+  ];
 
   const handleSubscribe = async (priceId: string | null, planName: string) => {
     if (!priceId) {
@@ -74,8 +55,8 @@ export function Pricing() {
 
     if (!user) {
       toast({
-        title: "Autenticação Necessária",
-        description: "Por favor, faça login para subscrever um plano.",
+        title: t('pricing.messages.authRequired'),
+        description: t('pricing.messages.loginPrompt'),
         variant: "destructive",
       });
       navigate("/auth");
@@ -97,8 +78,8 @@ export function Pricing() {
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível iniciar o processo de subscrição. Por favor, tente novamente.",
+        title: t('pricing.messages.error'),
+        description: t('pricing.messages.errorMessage'),
         variant: "destructive",
       });
     } finally {
@@ -110,9 +91,9 @@ export function Pricing() {
     <section className="py-24 px-4 gradient-subtle">
       <div className="container mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl mb-4">Planos Simples e Transparentes</h2>
+          <h2 className="text-4xl md:text-5xl mb-4">{t('pricing.title')}</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Escolha o plano perfeito para as suas necessidades
+            {t('pricing.subtitle')}
           </p>
         </div>
         
@@ -127,7 +108,7 @@ export function Pricing() {
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                   <span className="gradient-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">
-                    Mais Popular
+                    {t('pricing.popular')}
                   </span>
                 </div>
               )}
@@ -157,7 +138,7 @@ export function Pricing() {
                 onClick={() => handleSubscribe(plan.priceId, plan.name)}
                 disabled={loading === plan.priceId}
               >
-                {loading === plan.priceId ? "A processar..." : plan.cta}
+                {loading === plan.priceId ? t('pricing.processing') : plan.cta}
               </Button>
             </div>
           ))}

@@ -70,59 +70,86 @@ const translations = {
       logout: "Sair"
     },
     hero: {
-      title: "Proteja o Seu Home Assistant com Backups Automáticos",
-      subtitle: "Backups seguros, encriptados e automáticos para o seu sistema Home Assistant. Nunca perca dados importantes novamente.",
-      cta: "Começar Gratuitamente",
-      learnMore: "Saber Mais"
+      title: "Backups Seguros para o Seu",
+      titleHighlight: " Home Assistant",
+      subtitle: "Crie, armazene e restaure backups da sua configuração com total segurança e facilidade.",
+      cta: "Começar Grátis",
+      viewPlans: "Ver Planos",
+      badge1: "7 dias grátis",
+      badge2: "Sem cartão de crédito",
+      badge3: "Cancele quando quiser"
     },
     features: {
-      title: "Tudo o Que Precisa para Proteger os Seus Dados",
+      title: "Tudo o que Precisa",
+      subtitle: "Proteção completa para a sua configuração do Home Assistant",
       backup: {
         title: "Backups Automáticos",
-        description: "Agende backups diários do seu Home Assistant sem qualquer intervenção manual"
+        description: "Configure backups automáticos diários, semanais ou mensais da sua configuração do Home Assistant."
       },
       restore: {
         title: "Restauro Rápido",
-        description: "Restaure o seu sistema em minutos quando precisar"
+        description: "Restaure a sua configuração em segundos com um simples clique. Mantém histórico completo de versões."
       },
       security: {
-        title: "Segurança Máxima",
-        description: "Encriptação de ponta a ponta e armazenamento seguro na cloud"
+        title: "Segurança Total",
+        description: "Dados encriptados em repouso e em trânsito. Armazenamento S3-compatible redundante e confiável."
       }
     },
     pricing: {
-      title: "Escolha o Plano Ideal para Si",
-      subtitle: "Comece gratuitamente, faça upgrade quando precisar",
+      title: "Planos Simples e Transparentes",
+      subtitle: "Escolha o plano perfeito para as suas necessidades",
+      popular: "Mais Popular",
+      processing: "A processar...",
       free: {
         name: "Free",
-        price: "0",
-        description: "Para começar",
-        cta: "Começar"
+        price: "0€",
+        period: "para sempre",
+        description: "Ideal para testar",
+        cta: "Começar Grátis",
+        features: [
+          "1 backup por semana",
+          "Retenção de 7 dias",
+          "100 MB de armazenamento",
+          "1 instância do Home Assistant",
+          "Suporte por email"
+        ]
       },
       pro: {
         name: "Pro",
-        price: "4.99",
-        description: "Para utilizadores avançados",
-        cta: "Começar Teste Grátis"
+        price: "5€",
+        period: "/mês",
+        description: "Para entusiastas",
+        cta: "Subscrever Pro",
+        features: [
+          "Backups diários automáticos",
+          "Retenção de 90 dias",
+          "5 GB de armazenamento",
+          "2 instâncias do Home Assistant",
+          "Suporte prioritário",
+          "Webhook notifications"
+        ]
       },
       business: {
         name: "Business",
-        price: "14.99",
-        description: "Para uso profissional",
-        cta: "Contactar Vendas"
+        price: "15€",
+        period: "/mês",
+        description: "Para profissionais",
+        cta: "Subscrever Business",
+        features: [
+          "Backups ilimitados",
+          "Retenção de 180 dias",
+          "20 GB de armazenamento",
+          "5 instâncias do Home Assistant",
+          "Suporte dedicado 24/7",
+          "API completa",
+          "Relatórios e auditoria"
+        ]
       },
-      features: {
-        backups: "backups",
-        storage: "armazenamento",
-        maxSize: "tamanho máx/backup",
-        retention: "dias de retenção",
-        support: "Suporte",
-        supportCommunity: "Comunitário",
-        supportEmail: "Email",
-        supportPriority: "Prioritário",
-        api: "Acesso API",
-        webhooks: "Webhooks",
-        analytics: "Analytics"
+      messages: {
+        authRequired: "Autenticação Necessária",
+        loginPrompt: "Por favor, faça login para subscrever um plano.",
+        error: "Erro",
+        errorMessage: "Não foi possível iniciar o processo de subscrição. Por favor, tente novamente."
       }
     },
     footer: {
@@ -198,59 +225,86 @@ const translations = {
       logout: "Logout"
     },
     hero: {
-      title: "Protect Your Home Assistant with Automatic Backups",
-      subtitle: "Secure, encrypted, and automated backups for your Home Assistant system. Never lose important data again.",
+      title: "Secure Backups for Your",
+      titleHighlight: " Home Assistant",
+      subtitle: "Create, store and restore your configuration backups with complete security and ease.",
       cta: "Start Free",
-      learnMore: "Learn More"
+      viewPlans: "View Plans",
+      badge1: "7 days free",
+      badge2: "No credit card",
+      badge3: "Cancel anytime"
     },
     features: {
-      title: "Everything You Need to Protect Your Data",
+      title: "Everything You Need",
+      subtitle: "Complete protection for your Home Assistant configuration",
       backup: {
         title: "Automatic Backups",
-        description: "Schedule daily backups of your Home Assistant without any manual intervention"
+        description: "Configure automatic daily, weekly or monthly backups of your Home Assistant configuration."
       },
       restore: {
         title: "Fast Restore",
-        description: "Restore your system in minutes when you need it"
+        description: "Restore your configuration in seconds with a simple click. Maintains complete version history."
       },
       security: {
-        title: "Maximum Security",
-        description: "End-to-end encryption and secure cloud storage"
+        title: "Total Security",
+        description: "Data encrypted at rest and in transit. Redundant and reliable S3-compatible storage."
       }
     },
     pricing: {
-      title: "Choose the Perfect Plan for You",
-      subtitle: "Start free, upgrade when you need",
+      title: "Simple and Transparent Plans",
+      subtitle: "Choose the perfect plan for your needs",
+      popular: "Most Popular",
+      processing: "Processing...",
       free: {
         name: "Free",
-        price: "0",
-        description: "To get started",
-        cta: "Get Started"
+        price: "€0",
+        period: "forever",
+        description: "Ideal for testing",
+        cta: "Start Free",
+        features: [
+          "1 backup per week",
+          "7 days retention",
+          "100 MB storage",
+          "1 Home Assistant instance",
+          "Email support"
+        ]
       },
       pro: {
         name: "Pro",
-        price: "4.99",
-        description: "For advanced users",
-        cta: "Start Free Trial"
+        price: "€5",
+        period: "/month",
+        description: "For enthusiasts",
+        cta: "Subscribe Pro",
+        features: [
+          "Automatic daily backups",
+          "90 days retention",
+          "5 GB storage",
+          "2 Home Assistant instances",
+          "Priority support",
+          "Webhook notifications"
+        ]
       },
       business: {
         name: "Business",
-        price: "14.99",
-        description: "For professional use",
-        cta: "Contact Sales"
+        price: "€15",
+        period: "/month",
+        description: "For professionals",
+        cta: "Subscribe Business",
+        features: [
+          "Unlimited backups",
+          "180 days retention",
+          "20 GB storage",
+          "5 Home Assistant instances",
+          "24/7 dedicated support",
+          "Full API access",
+          "Reports and auditing"
+        ]
       },
-      features: {
-        backups: "backups",
-        storage: "storage",
-        maxSize: "max size/backup",
-        retention: "retention days",
-        support: "Support",
-        supportCommunity: "Community",
-        supportEmail: "Email",
-        supportPriority: "Priority",
-        api: "API Access",
-        webhooks: "Webhooks",
-        analytics: "Analytics"
+      messages: {
+        authRequired: "Authentication Required",
+        loginPrompt: "Please login to subscribe to a plan.",
+        error: "Error",
+        errorMessage: "Could not start the subscription process. Please try again."
       }
     },
     footer: {
