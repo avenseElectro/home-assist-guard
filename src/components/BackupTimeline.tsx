@@ -9,6 +9,7 @@ interface Backup {
   size_bytes: number;
   status: string;
   ha_version: string | null;
+  backup_trigger?: string;
 }
 
 interface BackupTimelineProps {
@@ -47,6 +48,19 @@ export function BackupTimeline({ backups }: BackupTimelineProps) {
         return <XCircle className="w-5 h-5 text-destructive" />;
       default:
         return <Clock className="w-5 h-5 text-muted-foreground" />;
+    }
+  };
+
+  const getTriggerBadge = (trigger?: string) => {
+    switch (trigger) {
+      case 'pre_update':
+        return <span className="text-xs text-primary">🎯 Pré-Update</span>;
+      case 'scheduled':
+        return <span className="text-xs text-muted-foreground">⏰ Agendado</span>;
+      case 'api':
+        return <span className="text-xs text-muted-foreground">🔌 API</span>;
+      default:
+        return <span className="text-xs text-muted-foreground">✋ Manual</span>;
     }
   };
 
@@ -90,7 +104,7 @@ export function BackupTimeline({ backups }: BackupTimelineProps) {
                       </Badge>
                     </div>
 
-                    <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-4 text-sm flex-wrap">
                       <span className="text-muted-foreground">
                         📊 {formatSize(backup.size_bytes)}
                       </span>
@@ -118,6 +132,8 @@ export function BackupTimeline({ backups }: BackupTimelineProps) {
                           🏠 HA {backup.ha_version}
                         </span>
                       )}
+
+                      {getTriggerBadge(backup.backup_trigger)}
                     </div>
                   </div>
                 </div>

@@ -18,6 +18,7 @@ interface Backup {
   size_bytes: number;
   status: string;
   ha_version: string | null;
+  backup_trigger?: string;
 }
 
 interface Subscription {
@@ -296,6 +297,8 @@ export default function Dashboard() {
                       <p className="text-sm text-muted-foreground">
                         {formatDate(backup.created_at)} • {formatSize(backup.size_bytes)}
                         {backup.ha_version && ` • HA ${backup.ha_version}`}
+                        {backup.backup_trigger === 'pre_update' && ' • 🎯 Pré-Update'}
+                        {backup.backup_trigger === 'scheduled' && ' • ⏰ Agendado'}
                       </p>
                     </div>
                     

@@ -102,7 +102,7 @@ async function handleInit(supabase: any, userId: string, req: Request) {
   console.log('[backup-upload] Handling init...');
   
   const body = await req.json();
-  const { file_size, ha_version } = body;
+  const { file_size, ha_version, backup_trigger } = body;
   
   if (!file_size) {
     return new Response(
@@ -191,6 +191,7 @@ async function handleInit(supabase: any, userId: string, req: Request) {
       storage_path: storagePath,
       size_bytes: file_size,
       ha_version: ha_version || 'unknown',
+      backup_trigger: backup_trigger || 'manual',
       status: 'uploading'
     })
     .select()

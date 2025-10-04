@@ -87,6 +87,7 @@ export type Database = {
       }
       backups: {
         Row: {
+          backup_trigger: string | null
           completed_at: string | null
           created_at: string
           error_message: string | null
@@ -99,6 +100,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          backup_trigger?: string | null
           completed_at?: string | null
           created_at?: string
           error_message?: string | null
@@ -111,6 +113,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          backup_trigger?: string | null
           completed_at?: string | null
           created_at?: string
           error_message?: string | null

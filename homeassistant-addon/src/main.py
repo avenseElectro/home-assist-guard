@@ -242,6 +242,61 @@ class HomeSafeConnector:
             logger.error(f"Failed to get snapshot info: {e}")
             return None
     
+    def get_current_ha_version(self):
+        """Get current Home Assistant version"""
+        try:
+            response = requests.get(
+                f'{self.supervisor_url}/core/info',
+                headers=self._get_supervisor_headers(),
+                timeout=30
+            )
+            response.raise_for_status()
+            core_data = response.json().get('data', {})
+            version = core_data.get('version', 'unknown')
+            logger.info(f"Current HA version: {version}")
+            return version
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to get HA version: {e}")
+            return None
+    
+    def check_version_changed(self):
+        """Check if HA version changed since last backup"""
+        try:
+            current_version = self.get_current_ha_version()
+            if not current_version:
+                logger.warning("Could not determine current HA version")
+                return False
+            
+            # Get last backup version from HomeSafe
+            response = requests.get(
+                f'{self.api_url}/backup-list',
+                headers={'x-api-key': self.api_key},
+                timeout=30
+            )
+            
+            if not response.ok:
+                logger.warning(f"Could not fetch backup list: {response.status_code}")
+                return False
+            
+            backups = response.json().get('backups', [])
+            
+            if not backups:
+                logger.info("No previous backups found, version change check skipped")
+                return False
+            
+            last_version = backups[0].get('ha_version')
+            
+            if last_version and last_version != current_version:
+                logger.info(f"🎯 HA version changed: {last_version} -> {current_version}")
+                return True
+            
+            logger.info(f"HA version unchanged: {current_version}")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error checking version change: {e}")
+            return False
+    
     def download_snapshot(self, snapshot_slug):
         """Download snapshot file from Supervisor (returns stream)"""
         logger.info(f"Downloading snapshot: {snapshot_slug}")
@@ -260,9 +315,9 @@ class HomeSafeConnector:
             logger.error(f"Failed to download snapshot: {e}")
             return None
     
-    def upload_to_homesafe(self, snapshot_slug, snapshot_stream):
+    def upload_to_homesafe(self, snapshot_slug, snapshot_stream, trigger_type='manual'):
         """Upload snapshot to HomeSafe using direct upload with chunking"""
-        logger.info(f"Uploading snapshot to HomeSafe: {snapshot_slug}")
+        logger.info(f"Uploading snapshot to HomeSafe: {snapshot_slug} (trigger: {trigger_type})")
         
         # Get snapshot info for metadata
         snapshot_info = self.get_snapshot_info(snapshot_slug)
@@ -293,7 +348,8 @@ class HomeSafeConnector:
                 },
                 json={
                     'file_size': file_size,
-                    'ha_version': ha_version
+                    'ha_version': ha_version,
+                    'backup_trigger': trigger_type
                 },
                 timeout=300
             )
@@ -386,9 +442,9 @@ class HomeSafeConnector:
             return False
     
     
-    def perform_backup(self):
+    def perform_backup(self, trigger_type='manual'):
         """Complete backup workflow: create, download, and upload"""
-        logger.info("=== Starting backup workflow ===")
+        logger.info(f"=== Starting backup workflow (trigger: {trigger_type}) ===")
         start_time = time.time()
         
         # Step 1: Create snapshot
@@ -406,7 +462,7 @@ class HomeSafeConnector:
         logger.info("Snapshot downloaded (streaming mode - minimal memory usage)")
         
         # Step 3: Upload to Supabase Storage
-        success = self.upload_to_homesafe(snapshot_slug, snapshot_stream)
+        success = self.upload_to_homesafe(snapshot_slug, snapshot_stream, trigger_type)
         
         # Step 4: Delete local backup immediately after upload (success or failure)
         if success:
@@ -497,12 +553,22 @@ def main():
     
     # Schedule automatic backups if enabled
     if AUTO_BACKUP:
-        schedule.every().day.at(BACKUP_TIME).do(connector.perform_backup)
+        schedule.every().day.at(BACKUP_TIME).do(lambda: connector.perform_backup('scheduled'))
         logger.info(f"Scheduled daily backup at {BACKUP_TIME}")
+    
+    # Schedule version check every hour (Smart Scheduling)
+    def check_and_backup_on_version_change():
+        """Check if HA version changed and create backup if so"""
+        if connector.check_version_changed():
+            logger.info("🎯 Smart Backup: Creating pre-update backup...")
+            connector.perform_backup('pre_update')
+    
+    schedule.every(1).hours.do(check_and_backup_on_version_change)
+    logger.info("Scheduled hourly HA version check (Smart Scheduling)")
     
     # Perform initial backup on startup
     logger.info("Performing initial backup...")
-    connector.perform_backup()
+    connector.perform_backup('manual')
     
     # Main loop
     logger.info("Entering main loop...")
