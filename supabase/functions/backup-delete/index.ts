@@ -105,13 +105,13 @@ serve(async (req) => {
       );
     }
 
-    // Log deletion
-    await supabase.from('backup_logs').insert({
-      user_id: user.id,
-      backup_id: backupId,
-      action: 'delete',
-      status: 'success',
-      message: `Backup deleted: ${backup.filename}`
+    // Log deletion using secure function
+    await supabase.rpc('insert_backup_log', {
+      _user_id: user.id,
+      _action: 'delete',
+      _status: 'success',
+      _message: `Backup deleted: ${backup.filename}`,
+      _backup_id: backupId
     });
 
     return new Response(

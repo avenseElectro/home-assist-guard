@@ -82,13 +82,13 @@ serve(async (req) => {
 
     const downloadUrl = signedData.signedUrl;
 
-    // Log download
-    await supabase.from('backup_logs').insert({
-      user_id: user.id,
-      backup_id: backupId,
-      action: 'download',
-      status: 'success',
-      message: `Backup download initiated: ${backup.filename}`
+    // Log download using secure function
+    await supabase.rpc('insert_backup_log', {
+      _user_id: user.id,
+      _action: 'download',
+      _status: 'success',
+      _message: `Backup download initiated: ${backup.filename}`,
+      _backup_id: backupId
     });
 
     return new Response(

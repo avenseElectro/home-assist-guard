@@ -226,6 +226,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_backup_log: {
+        Args: {
+          _action: string
+          _backup_id?: string
+          _message?: string
+          _metadata?: Json
+          _status: string
+          _user_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "user"

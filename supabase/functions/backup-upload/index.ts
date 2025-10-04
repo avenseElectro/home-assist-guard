@@ -300,14 +300,14 @@ async function handleComplete(supabase: any, userId: string, req: Request) {
     })
     .eq('id', backup_id);
 
-  // Log success
-  await supabase.from('backup_logs').insert({
-    user_id: userId,
-    backup_id: backup_id,
-    action: 'upload',
-    status: 'success',
-    message: `Backup uploaded successfully: ${backup.filename}`,
-    metadata: {
+  // Log success using secure function
+  await supabase.rpc('insert_backup_log', {
+    _user_id: userId,
+    _action: 'upload',
+    _status: 'success',
+    _message: `Backup uploaded successfully: ${backup.filename}`,
+    _backup_id: backup_id,
+    _metadata: {
       size_bytes: backup.size_bytes,
       ha_version: backup.ha_version
     }
@@ -346,13 +346,13 @@ async function handleFail(supabase: any, userId: string, req: Request) {
     .eq('id', backup_id)
     .eq('user_id', userId);
 
-  // Log failure
-  await supabase.from('backup_logs').insert({
-    user_id: userId,
-    backup_id: backup_id,
-    action: 'upload',
-    status: 'failed',
-    message: error_message || 'Upload failed'
+  // Log failure using secure function
+  await supabase.rpc('insert_backup_log', {
+    _user_id: userId,
+    _action: 'upload',
+    _status: 'failed',
+    _message: error_message || 'Upload failed',
+    _backup_id: backup_id
   });
 
   return new Response(

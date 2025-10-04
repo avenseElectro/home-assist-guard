@@ -73,12 +73,12 @@ serve(async (req) => {
       );
     }
 
-    // Log API key creation
-    await supabase.from('backup_logs').insert({
-      user_id: user.id,
-      action: 'api_key_create',
-      status: 'success',
-      message: `API key created: ${name}`
+    // Log API key creation using secure function
+    await supabase.rpc('insert_backup_log', {
+      _user_id: user.id,
+      _action: 'api_key_create',
+      _status: 'success',
+      _message: `API key created: ${name}`
     });
 
     return new Response(
