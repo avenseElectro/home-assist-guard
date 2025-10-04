@@ -3,6 +3,8 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { CheckCircle2, XCircle, Clock, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Backup {
   id: string;
@@ -91,23 +93,44 @@ export function BackupTimeline({ backups }: BackupTimelineProps) {
               onClick={() => setFilter('all')}
             >
               Todos
+              <Badge variant="secondary" className="ml-2">
+                {backups.length}
+              </Badge>
             </Button>
-            <Button
-              variant={filter === 'pre_update' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('pre_update')}
-              title="Backups antes de atualizações"
-            >
-              🎯
-            </Button>
-            <Button
-              variant={filter === 'scheduled' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('scheduled')}
-              title="Backups agendados"
-            >
-              ⏰
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={filter === 'pre_update' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilter('pre_update')}
+                  >
+                    🎯
+                    <Badge variant="secondary" className="ml-2">
+                      {backups.filter(b => b.backup_trigger === 'pre_update').length}
+                    </Badge>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Backups Pré-Update</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={filter === 'scheduled' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilter('scheduled')}
+                  >
+                    ⏰
+                    <Badge variant="secondary" className="ml-2">
+                      {backups.filter(b => b.backup_trigger === 'scheduled').length}
+                    </Badge>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Backups Agendados</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       </CardHeader>
@@ -122,58 +145,76 @@ export function BackupTimeline({ backups }: BackupTimelineProps) {
               const sizeDiff = previousBackup ? getSizeDiff(backup.size_bytes, previousBackup.size_bytes) : null;
 
               return (
-                <div key={backup.id} className="relative pl-10">
+                <motion.div
+                  key={backup.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  className="relative pl-10"
+                >
                   {/* Timeline dot */}
                   <div className="absolute left-0 top-1 w-7 h-7 rounded-full bg-background border-2 border-border flex items-center justify-center">
                     {getStatusIcon(backup.status)}
                   </div>
 
-                  <div className="p-4 rounded-lg border border-border hover:bg-muted/30 transition-smooth">
-                    <div className="flex items-start justify-between gap-4 mb-2">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold truncate">{backup.filename}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(backup.created_at)}
-                        </p>
-                      </div>
-                      <Badge variant={backup.status === "completed" ? "default" : "destructive"}>
-                        {backup.status === "completed" ? "✅ Completo" : "❌ Falhou"}
-                      </Badge>
-                    </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="p-4 rounded-lg border border-border hover:bg-muted/30 transition-smooth cursor-pointer">
+                          <div className="flex items-start justify-between gap-4 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold truncate">{backup.filename}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDate(backup.created_at)}
+                              </p>
+                            </div>
+                            <Badge variant={backup.status === "completed" ? "default" : "destructive"}>
+                              {backup.status === "completed" ? "✅ Completo" : "❌ Falhou"}
+                            </Badge>
+                          </div>
 
-                    <div className="flex items-center gap-4 text-sm flex-wrap">
-                      <span className="text-muted-foreground">
-                        📊 {formatSize(backup.size_bytes)}
-                      </span>
+                          <div className="flex items-center gap-4 text-sm flex-wrap">
+                            <span className="text-muted-foreground">
+                              📊 {formatSize(backup.size_bytes)}
+                            </span>
 
-                      {sizeDiff !== null && (
-                        <span className={`flex items-center gap-1 ${sizeDiff > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
-                          {sizeDiff > 0 ? (
-                            <>
-                              <TrendingUp className="w-3 h-3" />
-                              +{Math.abs(sizeDiff).toFixed(0)} MB
-                            </>
-                          ) : sizeDiff < 0 ? (
-                            <>
-                              <TrendingDown className="w-3 h-3" />
-                              -{Math.abs(sizeDiff).toFixed(0)} MB
-                            </>
-                          ) : (
-                            '0 MB'
-                          )}
-                        </span>
-                      )}
+                            {sizeDiff !== null && (
+                              <span className={`flex items-center gap-1 ${sizeDiff > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                                {sizeDiff > 0 ? (
+                                  <>
+                                    <TrendingUp className="w-3 h-3" />
+                                    +{Math.abs(sizeDiff).toFixed(0)} MB
+                                  </>
+                                ) : sizeDiff < 0 ? (
+                                  <>
+                                    <TrendingDown className="w-3 h-3" />
+                                    -{Math.abs(sizeDiff).toFixed(0)} MB
+                                  </>
+                                ) : (
+                                  '0 MB'
+                                )}
+                              </span>
+                            )}
 
-                      {backup.ha_version && (
-                        <span className="text-muted-foreground">
-                          🏠 HA {backup.ha_version}
-                        </span>
-                      )}
+                            {backup.ha_version && (
+                              <span className="text-muted-foreground">
+                                🏠 HA {backup.ha_version}
+                              </span>
+                            )}
 
-                      {getTriggerBadge(backup.backup_trigger)}
-                    </div>
-                  </div>
-                </div>
+                            {getTriggerBadge(backup.backup_trigger)}
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs">
+                        <p className="font-semibold mb-1">{backup.filename}</p>
+                        <p className="text-xs">Criado: {new Date(backup.created_at).toLocaleString('pt-PT')}</p>
+                        <p className="text-xs">Tamanho: {formatSize(backup.size_bytes)}</p>
+                        {backup.ha_version && <p className="text-xs">Home Assistant: v{backup.ha_version}</p>}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </motion.div>
               );
             })}
           </div>

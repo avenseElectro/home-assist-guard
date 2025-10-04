@@ -1,6 +1,7 @@
 import { AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { motion } from "framer-motion";
 
 interface Backup {
   id: string;
@@ -144,16 +145,22 @@ export function AlertsPanel({ backups, subscription, storageUsedGB, webhookFailu
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {alerts.map((alert) => (
-          <Alert 
+        {alerts.map((alert, index) => (
+          <motion.div
             key={alert.id}
-            variant={alert.type === 'error' || alert.type === 'warning' ? 'destructive' : 'default'}
-            className="transition-smooth"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
           >
-            {alert.icon}
-            <AlertTitle>{alert.title}</AlertTitle>
-            <AlertDescription>{alert.message}</AlertDescription>
-          </Alert>
+            <Alert 
+              variant={alert.type === 'error' || alert.type === 'warning' ? 'destructive' : 'default'}
+              className="transition-smooth"
+            >
+              {alert.icon}
+              <AlertTitle>{alert.title}</AlertTitle>
+              <AlertDescription>{alert.message}</AlertDescription>
+            </Alert>
+          </motion.div>
         ))}
       </CardContent>
     </Card>

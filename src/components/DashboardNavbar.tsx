@@ -3,13 +3,31 @@ import { Link } from "react-router-dom";
 import { Shield, Bell, Key, Webhook } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from "@/components/ui/dropdown-menu";
+
+interface Alert {
+  id: string;
+  type: 'warning' | 'error' | 'info' | 'success';
+  title: string;
+  icon: React.ReactNode;
+}
 
 interface DashboardNavbarProps {
   alertCount?: number;
+  alerts?: Alert[];
 }
 
-export function DashboardNavbar({ alertCount = 0 }: DashboardNavbarProps) {
+export function DashboardNavbar({ alertCount = 0, alerts = [] }: DashboardNavbarProps) {
   const { signOut } = useAuth();
+
+  const activeAlerts = alerts.filter(a => a.type !== 'success');
 
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -23,17 +41,31 @@ export function DashboardNavbar({ alertCount = 0 }: DashboardNavbarProps) {
         
         <div className="flex items-center gap-3">
           {alertCount > 0 && (
-            <Link to="/dashboard">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs"
-                >
-                  {alertCount}
-                </Badge>
-              </Button>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="w-5 h-5" />
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs"
+                  >
+                    {alertCount}
+                  </Badge>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>Alertas Ativos ({alertCount})</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {activeAlerts.slice(0, 5).map((alert) => (
+                  <DropdownMenuItem key={alert.id} className="flex items-start gap-3 py-3">
+                    <span className="mt-0.5">{alert.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium leading-tight">{alert.title}</p>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <Button variant="ghost" asChild>
             <Link to="/api-keys">
