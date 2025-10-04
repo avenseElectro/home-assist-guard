@@ -21,6 +21,9 @@ export function Navbar() {
           <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-smooth">
             {t('nav.pricing')}
           </Link>
+          <Link to="/lovelace" className="text-muted-foreground hover:text-foreground transition-smooth">
+            🏠 Lovelace Card
+          </Link>
           <Link to="/docs" className="text-muted-foreground hover:text-foreground transition-smooth">
             {t('nav.docs')}
           </Link>

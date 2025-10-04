@@ -26,5 +26,7 @@ startup: services
 boot: auto
 hassio_api: true
 hassio_role: admin
-ports: {}
-ports_description: {}
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: "HomeSafe API for Lovelace Card"

@@ -6,6 +6,8 @@ import schedule
 import requests
 from datetime import datetime, timezone
 from pathlib import Path
+from flask import Flask, jsonify, request
+from threading import Thread
 
 # Setup logging
 logging.basicConfig(
@@ -21,6 +23,10 @@ AUTO_BACKUP = os.getenv('AUTO_BACKUP', 'true').lower() == 'true'
 BACKUP_TIME = os.getenv('BACKUP_TIME', '03:00')
 SUPERVISOR_TOKEN = os.getenv('SUPERVISOR_TOKEN', '')
 SUPERVISOR_URL = 'http://supervisor'
+
+# Flask app for API
+app = Flask(__name__)
+connector_instance = None
 
 class HomeSafeConnector:
     def __init__(self):
@@ -541,15 +547,83 @@ class HomeSafeConnector:
                         timeout=30
                     )
         except Exception as e:
-            logger.warning(f"Failed to cleanup old snapshots: {e}")
+                logger.warning(f"Failed to cleanup old snapshots: {e}")
+
+# Flask API Endpoints
+@app.route('/api/backups', methods=['GET'])
+def get_backups():
+    """Get list of backups from HomeSafe"""
+    try:
+        if not connector_instance:
+            return jsonify({'success': False, 'error': 'Connector not initialized'}), 500
+        
+        response = requests.get(
+            f'{connector_instance.api_url}/backup-list',
+            headers={'x-api-key': connector_instance.api_key},
+            timeout=30
+        )
+        
+        if response.ok:
+            data = response.json()
+            return jsonify({'success': True, 'backups': data.get('backups', [])})
+        else:
+            return jsonify({'success': False, 'error': f'API error: {response.status_code}'}), 500
+    
+    except Exception as e:
+        logger.error(f"Error fetching backups: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/backup/trigger', methods=['POST'])
+def trigger_backup():
+    """Trigger a manual backup"""
+    try:
+        if not connector_instance:
+            return jsonify({'success': False, 'error': 'Connector not initialized'}), 500
+        
+        # Run backup in background thread
+        def run_backup():
+            connector_instance.perform_backup('manual')
+        
+        Thread(target=run_backup, daemon=True).start()
+        
+        return jsonify({'success': True, 'message': 'Backup started'})
+    
+    except Exception as e:
+        logger.error(f"Error triggering backup: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/status', methods=['GET'])
+def get_status():
+    """Get addon status"""
+    try:
+        return jsonify({
+            'success': True,
+            'status': 'running',
+            'auto_backup': AUTO_BACKUP,
+            'backup_time': BACKUP_TIME
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+def run_flask():
+    """Run Flask API in background"""
+    app.run(host='0.0.0.0', port=8099, debug=False, use_reloader=False)
 
 def main():
+    global connector_instance
+    
     logger.info("HomeSafe Connector started")
     logger.info(f"API URL: {API_URL}")
     logger.info(f"Auto backup: {AUTO_BACKUP}")
     logger.info(f"Backup time: {BACKUP_TIME}")
     
     connector = HomeSafeConnector()
+    connector_instance = connector
+    
+    # Start Flask API in background thread
+    flask_thread = Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    logger.info("Flask API started on port 8099")
     
     # Schedule automatic backups if enabled
     if AUTO_BACKUP:
