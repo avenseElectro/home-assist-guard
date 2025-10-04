@@ -6,6 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 };
 
+// Hash API key using SHA-256
+async function hashApiKey(apiKey: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(apiKey);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
 serve(async (req) => {
   console.log('[backup-upload] Request received:', req.method, req.url);
   
@@ -33,11 +43,14 @@ serve(async (req) => {
       );
     }
 
+    // Hash the incoming API key to compare with stored hash
+    const hashedKey = await hashApiKey(apiKey);
+
     // Validate API key and get user
     const { data: keyData, error: keyError } = await supabase
       .from('api_keys')
       .select('user_id, revoked_at')
-      .eq('key_hash', apiKey)
+      .eq('key_hash', hashedKey)
       .single();
 
     if (keyError || !keyData || keyData.revoked_at) {
@@ -53,7 +66,7 @@ serve(async (req) => {
     await supabase
       .from('api_keys')
       .update({ last_used_at: new Date().toISOString() })
-      .eq('key_hash', apiKey);
+      .eq('key_hash', hashedKey);
 
     if (action === 'init') {
       // Initialize upload - validate limits and return presigned URL

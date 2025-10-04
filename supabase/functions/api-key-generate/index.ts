@@ -16,6 +16,16 @@ function generateApiKey(): string {
   return key;
 }
 
+// Hash API key using SHA-256
+async function hashApiKey(apiKey: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(apiKey);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -53,14 +63,15 @@ serve(async (req) => {
 
     // Generate API key
     const apiKey = generateApiKey();
+    const hashedKey = await hashApiKey(apiKey);
 
-    // Store hashed key in database
+    // Store hashed key in database (SECURITY: Never store plain text API keys)
     const { data: keyData, error: keyError } = await supabase
       .from('api_keys')
       .insert({
         user_id: user.id,
         name: name.trim(),
-        key_hash: apiKey // In production, this should be hashed
+        key_hash: hashedKey
       })
       .select()
       .single();

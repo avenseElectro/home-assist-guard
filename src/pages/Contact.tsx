@@ -7,6 +7,27 @@ import { Mail, Github, MessageSquare, FileQuestion } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Validation schema for contact form
+const contactFormSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(1, "Nome é obrigatório")
+    .max(100, "Nome deve ter no máximo 100 caracteres"),
+  email: z.string()
+    .trim()
+    .email("Email inválido")
+    .max(255, "Email deve ter no máximo 255 caracteres"),
+  subject: z.string()
+    .trim()
+    .min(1, "Assunto é obrigatório")
+    .max(200, "Assunto deve ter no máximo 200 caracteres"),
+  message: z.string()
+    .trim()
+    .min(1, "Mensagem é obrigatória")
+    .max(2000, "Mensagem deve ter no máximo 2000 caracteres")
+});
 
 export default function Contact() {
   const { toast } = useToast();
@@ -24,8 +45,11 @@ export default function Contact() {
     setIsSubmitting(true);
 
     try {
+      // Validate form data
+      const validatedData = contactFormSchema.parse(formData);
+
       const { data, error } = await supabase.functions.invoke('send-contact-email', {
-        body: formData
+        body: validatedData
       });
 
       if (error) throw error;
@@ -37,12 +61,19 @@ export default function Contact() {
 
       setFormData({ name: "", email: "", subject: "", message: "" });
     } catch (error: any) {
-      console.error('Error sending contact form:', error);
-      toast({
-        title: "Erro ao enviar mensagem",
-        description: "Por favor, tente novamente ou contacte-nos por email diretamente.",
-        variant: "destructive",
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Erro de validação",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro ao enviar mensagem",
+          description: "Por favor, tente novamente ou contacte-nos por email diretamente.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
