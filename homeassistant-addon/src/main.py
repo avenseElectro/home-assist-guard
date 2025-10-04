@@ -261,7 +261,7 @@ class HomeSafeConnector:
             return None
     
     def upload_to_homesafe(self, snapshot_slug, snapshot_stream):
-        """Upload snapshot to HomeSafe using presigned URL (direct to storage)"""
+        """Upload snapshot to HomeSafe using direct upload with chunking"""
         logger.info(f"Uploading snapshot to HomeSafe: {snapshot_slug}")
         
         # Get snapshot info for metadata
@@ -283,8 +283,8 @@ class HomeSafeConnector:
             
             logger.info(f"File size: {file_size} bytes ({file_size / (1024*1024*1024):.2f} GB)")
             
-            # Step 1: Initialize upload and get presigned URL
-            logger.info("Step 1/3: Initializing upload...")
+            # Step 1: Initialize upload
+            logger.info("Step 1/2: Initializing upload...")
             init_response = requests.post(
                 f'{self.api_url}/backup-upload?action=init',
                 headers={
@@ -295,7 +295,7 @@ class HomeSafeConnector:
                     'file_size': file_size,
                     'ha_version': ha_version
                 },
-                timeout=300  # 5 minutes for init
+                timeout=300
             )
             init_response.raise_for_status()
             init_data = init_response.json()
@@ -305,43 +305,64 @@ class HomeSafeConnector:
                 return False
             
             backup_id = init_data['backup_id']
-            upload_url = init_data['upload_url']
-            token = init_data['token']
+            storage_path = init_data['storage_path']
             logger.info(f"Upload initialized. Backup ID: {backup_id}")
             
-            # Step 2: Upload directly to storage using presigned URL
-            logger.info("Step 2/3: Uploading file to storage (this may take several minutes)...")
-            upload_response = requests.put(
-                upload_url,
-                data=snapshot_stream.raw,
-                headers={
-                    'Content-Type': 'application/x-tar',
-                    'x-upsert': 'false'
-                },
-                timeout=3600  # 1 hour timeout for large files
-            )
+            # Step 2: Upload file in chunks to edge function
+            logger.info("Step 2/2: Uploading file (this may take several minutes)...")
+            chunk_size = 50 * 1024 * 1024  # 50MB chunks
+            uploaded_bytes = 0
+            chunk_number = 0
             
-            if not upload_response.ok:
-                logger.error(f"Storage upload failed: {upload_response.status_code} - {upload_response.text}")
-                # Notify backend of failure
-                requests.post(
-                    f'{self.api_url}/backup-upload?action=fail',
+            while uploaded_bytes < file_size:
+                chunk_data = snapshot_stream.raw.read(chunk_size)
+                if not chunk_data:
+                    break
+                
+                chunk_number += 1
+                chunk_length = len(chunk_data)
+                
+                logger.info(f"Uploading chunk {chunk_number}: {uploaded_bytes + chunk_length}/{file_size} bytes ({((uploaded_bytes + chunk_length) / file_size * 100):.1f}%)")
+                
+                # Upload chunk
+                chunk_response = requests.post(
+                    f'{self.api_url}/backup-upload?action=chunk',
                     headers={
                         'x-api-key': self.api_key,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/octet-stream',
                     },
-                    json={
+                    params={
                         'backup_id': backup_id,
-                        'error_message': f"Storage upload failed: {upload_response.status_code}"
+                        'chunk_number': chunk_number,
+                        'offset': uploaded_bytes
                     },
-                    timeout=300  # 5 minutes for failure notification
+                    data=chunk_data,
+                    timeout=1800  # 30 minutes per chunk
                 )
-                return False
+                
+                if not chunk_response.ok:
+                    logger.error(f"Chunk upload failed: {chunk_response.status_code} - {chunk_response.text}")
+                    # Notify backend of failure
+                    requests.post(
+                        f'{self.api_url}/backup-upload?action=fail',
+                        headers={
+                            'x-api-key': self.api_key,
+                            'Content-Type': 'application/json'
+                        },
+                        json={
+                            'backup_id': backup_id,
+                            'error_message': f"Chunk upload failed: {chunk_response.status_code}"
+                        },
+                        timeout=300
+                    )
+                    return False
+                
+                uploaded_bytes += chunk_length
             
-            logger.info("Upload to storage completed successfully")
+            logger.info("All chunks uploaded successfully")
             
             # Step 3: Mark upload as complete
-            logger.info("Step 3/3: Finalizing backup...")
+            logger.info("Finalizing backup...")
             complete_response = requests.post(
                 f'{self.api_url}/backup-upload?action=complete',
                 headers={
@@ -351,7 +372,7 @@ class HomeSafeConnector:
                 json={
                     'backup_id': backup_id
                 },
-                timeout=300  # 5 minutes for completion
+                timeout=300
             )
             complete_response.raise_for_status()
             

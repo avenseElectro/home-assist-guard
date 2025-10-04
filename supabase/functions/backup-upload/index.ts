@@ -58,6 +58,9 @@ serve(async (req) => {
     if (action === 'init') {
       // Initialize upload - validate limits and return presigned URL
       return await handleInit(supabase, userId, req);
+    } else if (action === 'chunk') {
+      // Receive and store a chunk
+      return await handleChunk(supabase, userId, req);
     } else if (action === 'complete') {
       // Mark upload as complete
       return await handleComplete(supabase, userId, req);
@@ -188,31 +191,74 @@ async function handleInit(supabase: any, userId: string, req: Request) {
     );
   }
 
-  // Create presigned upload URL (valid for 2 hours)
-  const { data: signedData, error: signedError } = await supabase.storage
-    .from('backups')
-    .createSignedUploadUrl(storagePath, {
-      upsert: false
-    });
-
-  if (signedError || !signedData) {
-    console.error('Failed to create signed URL:', signedError);
-    await supabase.from('backups').delete().eq('id', backup.id);
-    return new Response(
-      JSON.stringify({ error: 'Failed to create upload URL' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-
-  console.log('[backup-upload] Init successful, returning upload URL');
+  console.log('[backup-upload] Init successful, ready for chunks');
   return new Response(
     JSON.stringify({
       success: true,
       backup_id: backup.id,
-      upload_url: signedData.signedUrl,
-      storage_path: storagePath,
-      token: signedData.token
+      storage_path: storagePath
     }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function handleChunk(supabase: any, userId: string, req: Request) {
+  console.log('[backup-upload] Handling chunk upload...');
+  
+  const url = new URL(req.url);
+  const backupId = url.searchParams.get('backup_id');
+  const chunkNumber = url.searchParams.get('chunk_number');
+  const offset = url.searchParams.get('offset');
+
+  if (!backupId || !chunkNumber || !offset) {
+    return new Response(
+      JSON.stringify({ error: 'Missing required parameters' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Verify backup exists and belongs to user
+  const { data: backup, error: backupError } = await supabase
+    .from('backups')
+    .select('*')
+    .eq('id', backupId)
+    .eq('user_id', userId)
+    .single();
+
+  if (backupError || !backup) {
+    console.error('Backup not found:', backupError);
+    return new Response(
+      JSON.stringify({ error: 'Backup not found' }),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Read chunk data
+  const chunkData = await req.arrayBuffer();
+  const chunkBytes = new Uint8Array(chunkData);
+  
+  console.log(`[backup-upload] Received chunk ${chunkNumber} of ${chunkBytes.length} bytes at offset ${offset}`);
+
+  // Upload chunk to storage using upsert to append to existing file
+  const { error: uploadError } = await supabase.storage
+    .from('backups')
+    .upload(backup.storage_path, chunkBytes, {
+      contentType: 'application/x-tar',
+      cacheControl: '3600',
+      upsert: true
+    });
+
+  if (uploadError) {
+    console.error('[backup-upload] Failed to upload chunk:', uploadError);
+    return new Response(
+      JSON.stringify({ error: 'Failed to upload chunk', details: uploadError.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  console.log(`[backup-upload] Chunk ${chunkNumber} uploaded successfully`);
+  return new Response(
+    JSON.stringify({ success: true }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
