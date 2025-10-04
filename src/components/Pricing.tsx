@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const plans = [
   {
@@ -8,6 +12,7 @@ const plans = [
     price: "0€",
     period: "para sempre",
     description: "Ideal para testar",
+    priceId: null,
     features: [
       "1 backup por semana",
       "Retenção de 7 dias",
@@ -23,6 +28,7 @@ const plans = [
     price: "5€",
     period: "/mês",
     description: "Para entusiastas",
+    priceId: "price_1SEWmFFaQO1xoKujXe8dfKie",
     features: [
       "Backups diários automáticos",
       "Retenção de 90 dias",
@@ -39,6 +45,7 @@ const plans = [
     price: "15€",
     period: "/mês",
     description: "Para profissionais",
+    priceId: "price_1SEWmQFaQO1xoKujv3sv0jmu",
     features: [
       "Backups ilimitados",
       "Retenção de 180 dias",
@@ -54,6 +61,51 @@ const plans = [
 ];
 
 export function Pricing() {
+  const [loading, setLoading] = useState<string | null>(null);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubscribe = async (priceId: string | null, planName: string) => {
+    if (!priceId) {
+      navigate("/auth");
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Autenticação Necessária",
+        description: "Por favor, faça login para subscrever um plano.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    setLoading(priceId);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { priceId }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível iniciar o processo de subscrição. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <section className="py-24 px-4 gradient-subtle">
       <div className="container mx-auto">
@@ -99,12 +151,13 @@ export function Pricing() {
               </ul>
               
               <Button 
-                asChild 
                 variant={plan.popular ? "hero" : "outline"}
                 className="w-full"
                 size="lg"
+                onClick={() => handleSubscribe(plan.priceId, plan.name)}
+                disabled={loading === plan.priceId}
               >
-                <Link to="/auth">{plan.cta}</Link>
+                {loading === plan.priceId ? "A processar..." : plan.cta}
               </Button>
             </div>
           ))}

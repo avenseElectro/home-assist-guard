@@ -9,6 +9,9 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import ApiKeys from "./pages/ApiKeys";
 import PricingPage from "./pages/PricingPage";
+import Upgrade from "./pages/Upgrade";
+import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import SubscriptionCancelled from "./pages/SubscriptionCancelled";
 import Docs from "./pages/Docs";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -32,6 +35,9 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/api-keys" element={<ApiKeys />} />
           <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/upgrade" element={<Upgrade />} />
+          <Route path="/subscription-success" element={<SubscriptionSuccess />} />
+          <Route path="/subscription-cancelled" element={<SubscriptionCancelled />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />

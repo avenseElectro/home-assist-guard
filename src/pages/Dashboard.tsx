@@ -224,9 +224,33 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold mb-1 capitalize">{subscription?.plan || "Free"}</div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mb-4">
                 {backups.length} de {subscription?.max_backups || 3} backups
               </p>
+              {subscription?.plan === "free" ? (
+                <Link to="/upgrade">
+                  <Button variant="hero" size="sm" className="w-full">
+                    Fazer Upgrade
+                  </Button>
+                </Link>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={async () => {
+                    try {
+                      const { data, error } = await supabase.functions.invoke('customer-portal');
+                      if (error) throw error;
+                      if (data?.url) window.open(data.url, '_blank');
+                    } catch (error) {
+                      toast.error("Erro ao abrir portal de gestão");
+                    }
+                  }}
+                >
+                  Gerir Subscrição
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
