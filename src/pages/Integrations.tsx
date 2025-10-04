@@ -254,19 +254,64 @@ const Integrations = () => {
                   <Alert>
                     <Info className="w-4 h-4" />
                     <AlertDescription>
-                      <strong>Em desenvolvimento:</strong> Esta funcionalidade estará disponível em breve.
+                      <strong>Replicação automática:</strong> Após cada backup completo, uma cópia é enviada automaticamente para o Dropbox.
                     </AlertDescription>
                   </Alert>
 
-                  <div className="flex items-center justify-between opacity-50">
+                  <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label className="text-base font-semibold">Ativar Dropbox Sync</Label>
                       <p className="text-sm text-muted-foreground">
                         Replicar backups para o Dropbox
                       </p>
                     </div>
-                    <Switch disabled />
+                    <Switch
+                      checked={settings.dropbox_enabled || false}
+                      onCheckedChange={(checked) => setSettings({ ...settings, dropbox_enabled: checked })}
+                    />
                   </div>
+
+                  {settings.dropbox_enabled && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="dropbox_token">Access Token</Label>
+                        <Input
+                          id="dropbox_token"
+                          type="password"
+                          placeholder="sl.xxxxxxxxxxxxx"
+                          value={settings.dropbox_token || ''}
+                          onChange={(e) => setSettings({ ...settings, dropbox_token: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Crie uma app em:{" "}
+                          <a 
+                            href="https://www.dropbox.com/developers/apps/create" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Dropbox App Console
+                          </a>
+                          {" "}e gere um Access Token com permissões de escrita
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  <Button 
+                    onClick={saveSettings} 
+                    disabled={saving}
+                    className="w-full"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        A guardar...
+                      </>
+                    ) : (
+                      "Guardar Configuração"
+                    )}
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -287,19 +332,97 @@ const Integrations = () => {
                   <Alert>
                     <Info className="w-4 h-4" />
                     <AlertDescription>
-                      <strong>Em desenvolvimento:</strong> Esta funcionalidade estará disponível em breve.
+                      <strong>Replicação automática:</strong> Após cada backup completo, uma cópia é enviada automaticamente para S3.
                     </AlertDescription>
                   </Alert>
 
-                  <div className="flex items-center justify-between opacity-50">
+                  <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label className="text-base font-semibold">Ativar S3 Sync</Label>
                       <p className="text-sm text-muted-foreground">
                         Replicar backups para Amazon S3
                       </p>
                     </div>
-                    <Switch disabled />
+                    <Switch
+                      checked={settings.s3_enabled || false}
+                      onCheckedChange={(checked) => setSettings({ ...settings, s3_enabled: checked })}
+                    />
                   </div>
+
+                  {settings.s3_enabled && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="s3_bucket">Bucket Name</Label>
+                        <Input
+                          id="s3_bucket"
+                          placeholder="my-backup-bucket"
+                          value={settings.s3_bucket || ''}
+                          onChange={(e) => setSettings({ ...settings, s3_bucket: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="s3_region">Region</Label>
+                        <Input
+                          id="s3_region"
+                          placeholder="us-east-1"
+                          value={settings.s3_region || ''}
+                          onChange={(e) => setSettings({ ...settings, s3_region: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Ex: us-east-1, eu-west-1, ap-southeast-1
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="s3_access_key">Access Key ID</Label>
+                        <Input
+                          id="s3_access_key"
+                          placeholder="AKIAIOSFODNN7EXAMPLE"
+                          value={settings.s3_access_key || ''}
+                          onChange={(e) => setSettings({ ...settings, s3_access_key: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="s3_secret_key">Secret Access Key</Label>
+                        <Input
+                          id="s3_secret_key"
+                          type="password"
+                          placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+                          value={settings.s3_secret_key || ''}
+                          onChange={(e) => setSettings({ ...settings, s3_secret_key: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Crie credenciais IAM em:{" "}
+                          <a 
+                            href="https://console.aws.amazon.com/iam/" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            AWS IAM Console
+                          </a>
+                          {" "}com permissões s3:PutObject
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  <Button 
+                    onClick={saveSettings} 
+                    disabled={saving}
+                    className="w-full"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        A guardar...
+                      </>
+                    ) : (
+                      "Guardar Configuração"
+                    )}
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>

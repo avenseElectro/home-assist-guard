@@ -327,6 +327,24 @@ async function handleComplete(supabase: any, userId: string, req: Request) {
     }
   });
 
+  // Trigger multi-cloud replication asynchronously (fire and forget)
+  (async () => {
+    try {
+      console.log('[backup-upload] Triggering multi-cloud replication...');
+      const replicationResponse = await supabase.functions.invoke('backup-replicate', {
+        body: { backupId: backup_id }
+      });
+      
+      if (replicationResponse.error) {
+        console.error('[backup-upload] Replication trigger failed:', replicationResponse.error);
+      } else {
+        console.log('[backup-upload] Replication triggered successfully');
+      }
+    } catch (replicationError) {
+      console.error('[backup-upload] Failed to trigger replication:', replicationError);
+    }
+  })();
+
   console.log('[backup-upload] Upload completed successfully');
   return new Response(
     JSON.stringify({
