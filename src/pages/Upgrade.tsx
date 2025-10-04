@@ -29,7 +29,7 @@ const plans = [
     price: "5€",
     period: "/mês",
     description: "Para entusiastas",
-    priceId: "price_1SEWmFFaQO1xoKujXe8dfKie",
+    priceId: "price_1SEXIeFaQO1xoKuji0E6sEEK",
     features: [
       "Backups diários automáticos",
       "Retenção de 90 dias",
@@ -45,7 +45,7 @@ const plans = [
     price: "15€",
     period: "/mês",
     description: "Para profissionais",
-    priceId: "price_1SEWmQFaQO1xoKujv3sv0jmu",
+    priceId: "price_1SEXJ5FaQO1xoKujo8uBFZTj",
     features: [
       "Backups ilimitados",
       "Retenção de 180 dias",

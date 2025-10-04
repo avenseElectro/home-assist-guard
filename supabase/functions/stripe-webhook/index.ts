@@ -20,14 +20,14 @@ const PRICE_TO_PLAN_MAP: Record<string, {
   max_backup_size_gb: number,
   retention_days: number
 }> = {
-  'price_1SEWmFFaQO1xoKujXe8dfKie': { // HomeSafe Pro
+  'price_1SEXIeFaQO1xoKuji0E6sEEK': { // HomeSafe Pro
     plan: 'pro',
     max_backups: 10,
     max_storage_gb: 5,
     max_backup_size_gb: 2,
     retention_days: 30
   },
-  'price_1SEWmQFaQO1xoKujv3sv0jmu': { // HomeSafe Business
+  'price_1SEXJ5FaQO1xoKujo8uBFZTj': { // HomeSafe Business
     plan: 'business',
     max_backups: -1, // unlimited
     max_storage_gb: 20,
