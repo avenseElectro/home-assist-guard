@@ -25,38 +25,40 @@ import Integrations from "./pages/Integrations";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/api-keys" element={<ApiKeys />} />
-          <Route path="/webhooks" element={<Webhooks />} />
-          <Route path="/integrations" element={<Integrations />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/upgrade" element={<Upgrade />} />
-          <Route path="/subscription-success" element={<SubscriptionSuccess />} />
-          <Route path="/subscription-cancelled" element={<SubscriptionCancelled />} />
-          <Route path="/docs" element={<Docs />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/api" element={<ApiDocs />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/lovelace" element={<LovelaceGuide />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </LanguageProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/api-keys" element={<ApiKeys />} />
+              <Route path="/webhooks" element={<Webhooks />} />
+              <Route path="/integrations" element={<Integrations />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/upgrade" element={<Upgrade />} />
+              <Route path="/subscription-success" element={<SubscriptionSuccess />} />
+              <Route path="/subscription-cancelled" element={<SubscriptionCancelled />} />
+              <Route path="/docs" element={<Docs />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/api" element={<ApiDocs />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/lovelace" element={<LovelaceGuide />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
