@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Shield, Bell, Key, Webhook, Link as LinkIcon } from "lucide-react";
+import { Shield, Bell, Key, Webhook, Link as LinkIcon, Book, Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -73,22 +73,32 @@ export function DashboardNavbar({ alertCount = 0, alerts = [], isAdmin = false }
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <Button variant="ghost" asChild>
-            <Link to="/api-keys">
-              <Key className="w-5 h-5" />
+          <Button variant="ghost" asChild size="sm">
+            <Link to="/docs" title="Documentação">
+              <Book className="w-4 h-4" />
             </Link>
           </Button>
-          <Button variant="ghost" asChild>
-            <Link to="/webhooks">
-              <Webhook className="w-5 h-5" />
+          <Button variant="ghost" asChild size="sm">
+            <Link to="/lovelace-guide" title="Lovelace Guide">
+              <Home className="w-4 h-4" />
             </Link>
           </Button>
-          <Button variant="ghost" asChild>
-            <Link to="/integrations">
-              <LinkIcon className="w-5 h-5" />
+          <Button variant="ghost" asChild size="sm">
+            <Link to="/api-keys" title="API Keys">
+              <Key className="w-4 h-4" />
             </Link>
           </Button>
-          <Button variant="ghost" onClick={signOut}>
+          <Button variant="ghost" asChild size="sm">
+            <Link to="/webhooks" title="Webhooks">
+              <Webhook className="w-4 h-4" />
+            </Link>
+          </Button>
+          <Button variant="ghost" asChild size="sm">
+            <Link to="/integrations" title="Integrations">
+              <LinkIcon className="w-4 h-4" />
+            </Link>
+          </Button>
+          <Button variant="ghost" onClick={signOut} size="sm">
             Sair
           </Button>
         </div>

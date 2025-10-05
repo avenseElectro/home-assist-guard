@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,20 +43,17 @@ serve(async (req) => {
       );
     }
 
-    // Find matching API key by comparing hashes
-    let matchedKey = null;
-    for (const key of apiKeys || []) {
-      try {
-        const isMatch = await bcrypt.compare(apiKey, key.key_hash);
-        if (isMatch) {
-          matchedKey = key;
-          break;
-        }
-      } catch (err) {
-        console.error('Error comparing hash:', err);
-        continue;
-      }
-    }
+    // Hash the provided API key using SHA-256
+    const encoder = new TextEncoder();
+    const data = encoder.encode(apiKey);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const providedKeyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    console.log('Looking for matching API key...');
+
+    // Find matching API key by comparing SHA-256 hashes
+    const matchedKey = (apiKeys || []).find(key => key.key_hash === providedKeyHash);
 
     if (!matchedKey) {
       console.error('Invalid API key');

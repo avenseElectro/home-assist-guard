@@ -24,7 +24,8 @@ const LovelaceGuide = () => {
   };
 
   const yamlConfig = `type: custom:homesafe-card
-title: HomeSafe Backups`;
+title: HomeSafe Backups
+api_key: hsb_your_api_key_here`;
 
   const installScript = `# No painel Lovelace, clique em "Editar Dashboard"
 # Depois clique no botão "⋮" (três pontos) no canto superior direito
@@ -216,9 +217,45 @@ title: HomeSafe Backups`;
                     4
                   </div>
                   <div className="flex-1">
+                    <CardTitle>Gerar API Key</CardTitle>
+                    <CardDescription className="mt-2">
+                      Crie uma API key para o card comunicar com o HomeSafe
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert>
+                  <AlertDescription>
+                    <strong>Como gerar a API Key:</strong>
+                    <ol className="list-decimal list-inside mt-2 space-y-1">
+                      <li>Vá ao Dashboard do HomeSafe em <a href="/dashboard" className="text-primary hover:underline">Dashboard</a></li>
+                      <li>Clique em "API Keys" no menu superior</li>
+                      <li>Clique em "Generate New API Key"</li>
+                      <li>Dê um nome (ex: "Lovelace Card")</li>
+                      <li>Copie a chave gerada (começa com <code className="bg-background px-2 py-1 rounded">hsb_</code>)</li>
+                    </ol>
+                  </AlertDescription>
+                </Alert>
+                <Alert className="border-amber-500 bg-amber-500/10">
+                  <AlertDescription className="text-amber-700 dark:text-amber-400">
+                    ⚠️ <strong>Importante:</strong> Guarde a API key num local seguro. Ela só é mostrada uma vez!
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+
+            {/* Step 5 */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold">
+                    5
+                  </div>
+                  <div className="flex-1">
                     <CardTitle>Adicionar o Card ao Dashboard</CardTitle>
                     <CardDescription className="mt-2">
-                      Configure o card no seu Lovelace
+                      Configure o card no seu Lovelace com a API key
                     </CardDescription>
                   </div>
                 </div>
@@ -248,6 +285,7 @@ title: HomeSafe Backups`;
                       <li>No modo de edição do Dashboard, clique em "+ Adicionar Cartão"</li>
                       <li>Desça até ao fundo e clique em "Manual"</li>
                       <li>Cole a configuração YAML acima</li>
+                      <li><strong>Substitua <code className="bg-background px-2 py-1 rounded">hsb_your_api_key_here</code> pela sua API key real</strong></li>
                       <li>Clique em "Guardar"</li>
                     </ol>
                   </AlertDescription>
@@ -255,7 +293,7 @@ title: HomeSafe Backups`;
               </CardContent>
             </Card>
 
-            {/* Step 5 */}
+            {/* Step 6 */}
             <Card className="shadow-card border-primary">
               <CardHeader>
                 <div className="flex items-start gap-3">
@@ -307,11 +345,19 @@ title: HomeSafe Backups`;
                   </p>
                 </div>
                 <div>
+                  <h3 className="font-semibold mb-2">Card mostra erro 401 (Unauthorized)</h3>
+                  <p className="text-muted-foreground text-sm">
+                    - Verifique se configurou a API key correta no YAML<br />
+                    - A API key deve começar com <code className="bg-muted px-2 py-1 rounded">hsb_</code><br />
+                    - Gere uma nova API key se necessário no Dashboard → API Keys
+                  </p>
+                </div>
+                <div>
                   <h3 className="font-semibold mb-2">Card mostra "A carregar..." indefinidamente</h3>
                   <p className="text-muted-foreground text-sm">
-                    - Verifique se o add-on está a correr<br />
-                    - Confirme que a porta 8099 está acessível<br />
-                    - Verifique os logs do add-on
+                    - Verifique a configuração da API key no card YAML<br />
+                    - Confirme que tem acesso à internet<br />
+                    - Limpe a cache do browser (Ctrl + Shift + R)
                   </p>
                 </div>
                 <div>

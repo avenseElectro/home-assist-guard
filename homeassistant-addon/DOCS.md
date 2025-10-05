@@ -48,21 +48,41 @@ The add-on uses API key authentication:
 
 The HomeSafe Lovelace card displays your backups directly in Home Assistant. To configure it:
 
-1. **Generate an API Key**:
-   - Go to https://homesafe.lovable.app/api-keys
-   - Click "Generate New API Key"
-   - Copy the key (it starts with `hs_live_`)
+1. **Download the Card**:
+   - Download `homesafe-card.js` from https://homesafe.avensat.com/homesafe-card.js
+   - Place it in `/config/www/homesafe-card.js` on your Home Assistant
 
-2. **Configure the Card**:
+2. **Register the Resource**:
+   - In Lovelace, click "Edit Dashboard"
+   - Click the menu "⋮" and select "Manage resources"
+   - Click "+ Add resource"
+   - URL: `/local/homesafe-card.js`
+   - Type: JavaScript Module
+
+3. **Generate an API Key**:
+   - Go to https://homesafe.avensat.com and login
+   - Navigate to Dashboard → API Keys
+   - Click "Generate New API Key"
+   - Give it a name (e.g., "Lovelace Card")
+   - Copy the key (it starts with `hsb_`)
+
+4. **Configure the Card**:
    ```yaml
    type: custom:homesafe-card
    title: "HomeSafe Backups"
-   api_key: "hs_live_your_key_here"
+   api_key: "hsb_your_api_key_here"
    ```
 
-3. **Reload Lovelace** or restart Home Assistant
+5. **Add to Dashboard**:
+   - In edit mode, click "+ Add Card"
+   - Scroll down and click "Manual"
+   - Paste the YAML configuration above
+   - Replace `hsb_your_api_key_here` with your actual API key
+   - Click "Save"
 
 The card will now display your latest backups and allow you to trigger manual backups.
+
+**Important**: The API key is required for the card to fetch backup data. Without it, you'll see a 401 Unauthorized error.
 
 ### Endpoints Used
 
