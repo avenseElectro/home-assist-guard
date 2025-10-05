@@ -294,7 +294,7 @@ class HomeSafeConnector:
             
             # Get last backup version from HomeSafe
             response = requests.get(
-                f'{self.api_url}/backup-list',
+                f'{self.api_url}/backup-list-api-key',
                 headers={'x-api-key': self.api_key},
                 timeout=30
             )
