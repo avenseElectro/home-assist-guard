@@ -32,13 +32,28 @@ serve(async (req) => {
       );
     }
 
-    // Get user's backups
-    const { data: backups, error: backupsError } = await supabase
+    // Check if user is admin
+    const { data: adminCheck } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    // Get user's backups (no limit for admins)
+    let query = supabase
       .from('backups')
       .select('*')
       .eq('user_id', user.id)
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
+    
+    // Apply limit only for non-admin users
+    if (!adminCheck) {
+      query = query.limit(10);
+    }
+
+    const { data: backups, error: backupsError } = await query;
 
     if (backupsError) {
       console.error('Failed to fetch backups:', backupsError);

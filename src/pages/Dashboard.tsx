@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [backups, setBackups] = useState<Backup[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [webhooksCount, setWebhooksCount] = useState({ active: 0, total: 0 });
   const [selectedInstance, setSelectedInstance] = useState<string>("all");
 
@@ -54,7 +55,21 @@ export default function Dashboard() {
   }, [user]);
 
   const fetchData = async () => {
+    if (!user) return;
+
+    setLoading(true);
     try {
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      setIsAdmin(!!roleData);
+
+      // Fetch backups
       const { data: backupsData, error: backupsError } = await supabase
         .from("backups")
         .select("*")
@@ -266,7 +281,11 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen gradient-subtle">
-      <Navbar alertCount={alertCount} alerts={alerts} />
+      <Navbar 
+        alertCount={alertCount} 
+        alerts={alerts}
+        isAdmin={isAdmin}
+      />
       
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
@@ -389,33 +408,40 @@ export default function Dashboard() {
                 <CardTitle>Plano Ativo</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold mb-1 capitalize">{subscription?.plan || "Free"}</div>
+                <div className="text-3xl font-bold mb-1 capitalize">
+                  {isAdmin ? 'Unlimited' : subscription?.plan || "Free"}
+                </div>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {backups.length} de {subscription?.max_backups || 3} backups
+                  {isAdmin 
+                    ? 'Permissões de administrador'
+                    : `${backups.length} de ${subscription?.max_backups || 3} backups`
+                  }
                 </p>
-                {subscription?.plan === "free" ? (
-                  <Link to="/upgrade">
-                    <Button variant="hero" size="sm" className="w-full">
-                      Fazer Upgrade
+                {!isAdmin && (
+                  subscription?.plan === "free" ? (
+                    <Link to="/upgrade">
+                      <Button variant="hero" size="sm" className="w-full">
+                        Fazer Upgrade
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={async () => {
+                        try {
+                          const { data, error } = await supabase.functions.invoke('customer-portal');
+                          if (error) throw error;
+                          if (data?.url) window.open(data.url, '_blank');
+                        } catch (error) {
+                          toast.error("Erro ao abrir portal de gestão");
+                        }
+                      }}
+                    >
+                      Gerir Subscrição
                     </Button>
-                  </Link>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={async () => {
-                      try {
-                        const { data, error } = await supabase.functions.invoke('customer-portal');
-                        if (error) throw error;
-                        if (data?.url) window.open(data.url, '_blank');
-                      } catch (error) {
-                        toast.error("Erro ao abrir portal de gestão");
-                      }
-                    }}
-                  >
-                    Gerir Subscrição
-                  </Button>
+                  )
                 )}
               </CardContent>
             </Card>

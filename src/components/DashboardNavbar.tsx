@@ -22,9 +22,10 @@ interface Alert {
 interface DashboardNavbarProps {
   alertCount?: number;
   alerts?: Alert[];
+  isAdmin?: boolean;
 }
 
-export function DashboardNavbar({ alertCount = 0, alerts = [] }: DashboardNavbarProps) {
+export function DashboardNavbar({ alertCount = 0, alerts = [], isAdmin = false }: DashboardNavbarProps) {
   const { signOut } = useAuth();
 
   const activeAlerts = alerts.filter(a => a.type !== 'success');
@@ -40,6 +41,11 @@ export function DashboardNavbar({ alertCount = 0, alerts = [] }: DashboardNavbar
         </Link>
         
         <div className="flex items-center gap-3">
+          {isAdmin && (
+            <Badge variant="destructive" className="font-semibold">
+              ADMIN
+            </Badge>
+          )}
           {alertCount > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -125,58 +125,71 @@ async function handleInit(supabase: any, userId: string, req: Request) {
     );
   }
 
-  // Check backup count
-  const { count: backupCount } = await supabase
-    .from('backups')
-    .select('*', { count: 'exact', head: true })
+  // Check if user is admin - bypass all limits
+  const { data: adminCheck } = await supabase
+    .from('user_roles')
+    .select('role')
     .eq('user_id', userId)
-    .neq('status', 'deleted');
+    .eq('role', 'admin')
+    .maybeSingle();
 
-  if (backupCount && backupCount >= subscription.max_backups) {
-    return new Response(
-      JSON.stringify({ 
-        error: 'Backup limit reached', 
-        limit: subscription.max_backups,
-        current: backupCount 
-      }),
-      { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
+  const isAdmin = !!adminCheck;
 
-  // Check individual backup size
-  const maxBackupSizeBytes = subscription.max_backup_size_gb * 1024 * 1024 * 1024;
-  if (file_size > maxBackupSizeBytes) {
-    return new Response(
-      JSON.stringify({ 
-        error: 'Backup exceeds maximum size for your plan', 
-        max_backup_size_gb: subscription.max_backup_size_gb,
-        file_size_gb: (file_size / (1024 * 1024 * 1024)).toFixed(2)
-      }),
-      { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
+  // Only check limits for non-admin users
+  if (!isAdmin) {
+    // Check backup count
+    const { count: backupCount } = await supabase
+      .from('backups')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .neq('status', 'deleted');
 
-  // Check total storage usage
-  const { data: existingBackups } = await supabase
-    .from('backups')
-    .select('size_bytes')
-    .eq('user_id', userId)
-    .neq('status', 'deleted');
+    if (backupCount && backupCount >= subscription.max_backups) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Backup limit reached', 
+          limit: subscription.max_backups,
+          current: backupCount 
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-  const totalUsedBytes = (existingBackups || []).reduce((sum: number, b: any) => sum + (b.size_bytes || 0), 0);
-  const totalAfterUpload = totalUsedBytes + file_size;
-  const maxTotalBytes = subscription.max_storage_gb * 1024 * 1024 * 1024;
+    // Check individual backup size
+    const maxBackupSizeBytes = subscription.max_backup_size_gb * 1024 * 1024 * 1024;
+    if (file_size > maxBackupSizeBytes) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Backup exceeds maximum size for your plan', 
+          max_backup_size_gb: subscription.max_backup_size_gb,
+          file_size_gb: (file_size / (1024 * 1024 * 1024)).toFixed(2)
+        }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-  if (totalAfterUpload > maxTotalBytes) {
-    return new Response(
-      JSON.stringify({ 
-        error: 'Total storage limit exceeded', 
-        max_storage_gb: subscription.max_storage_gb,
-        current_usage_gb: (totalUsedBytes / (1024 * 1024 * 1024)).toFixed(2),
-        file_size_gb: (file_size / (1024 * 1024 * 1024)).toFixed(2)
-      }),
-      { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // Check total storage usage
+    const { data: existingBackups } = await supabase
+      .from('backups')
+      .select('size_bytes')
+      .eq('user_id', userId)
+      .neq('status', 'deleted');
+
+    const totalUsedBytes = (existingBackups || []).reduce((sum: number, b: any) => sum + (b.size_bytes || 0), 0);
+    const totalAfterUpload = totalUsedBytes + file_size;
+    const maxTotalBytes = subscription.max_storage_gb * 1024 * 1024 * 1024;
+
+    if (totalAfterUpload > maxTotalBytes) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Total storage limit exceeded', 
+          max_storage_gb: subscription.max_storage_gb,
+          current_usage_gb: (totalUsedBytes / (1024 * 1024 * 1024)).toFixed(2),
+          file_size_gb: (file_size / (1024 * 1024 * 1024)).toFixed(2)
+        }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
   }
 
   // Create backup record
