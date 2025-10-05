@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Shield, Bell, Key, Webhook, Link as LinkIcon, Book, Home } from "lucide-react";
+import { Shield, Bell, Key, Webhook, Link as LinkIcon, Book, Home, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { 
   DropdownMenu, 
@@ -27,6 +29,7 @@ interface DashboardNavbarProps {
 
 export function DashboardNavbar({ alertCount = 0, alerts = [], isAdmin = false }: DashboardNavbarProps) {
   const { signOut } = useAuth();
+  const { t } = useLanguage();
 
   const activeAlerts = alerts.filter(a => a.type !== 'success');
 
@@ -98,8 +101,10 @@ export function DashboardNavbar({ alertCount = 0, alerts = [], isAdmin = false }
               <LinkIcon className="w-4 h-4" />
             </Link>
           </Button>
-          <Button variant="ghost" onClick={signOut} size="sm">
-            Sair
+          <LanguageSwitcher />
+          <Button variant="ghost" onClick={signOut} size="sm" className="gap-2">
+            <LogOut className="w-4 h-4" />
+            {t('nav.logout')}
           </Button>
         </div>
       </div>

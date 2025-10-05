@@ -12,6 +12,7 @@ import { BackupTimeline } from "@/components/BackupTimeline";
 import { AlertsPanel, getAlertCount } from "@/components/AlertsPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Backup {
   id: string;
@@ -35,6 +36,7 @@ interface Subscription {
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [backups, setBackups] = useState<Backup[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast.error("Erro ao carregar dados");
+      toast.error(t('dashboard.loadingError'));
     } finally {
       setLoading(false);
     }
@@ -126,7 +128,7 @@ export default function Dashboard() {
 
   const handleDownload = async (backupId: string, filename: string) => {
     try {
-      toast.loading("A preparar download...");
+      toast.loading(t('dashboard.preparing'));
       
       const { data, error } = await supabase.functions.invoke(
         'backup-download',
@@ -144,22 +146,22 @@ export default function Dashboard() {
 
       if (data.download_url) {
         window.open(data.download_url, '_blank');
-        toast.success("Download iniciado!");
+        toast.success(t('dashboard.downloadStarted'));
       } else {
         throw new Error("No download URL returned");
       }
     } catch (error) {
       toast.dismiss();
       console.error("Error downloading backup:", error);
-      toast.error("Erro ao fazer download. Tente novamente.");
+      toast.error(t('dashboard.downloadError'));
     }
   };
 
   const handleDelete = async (backupId: string) => {
-    if (!confirm("Tem certeza que deseja eliminar este backup?")) return;
+    if (!confirm(t('dashboard.deleteConfirm'))) return;
 
     try {
-      toast.loading("A eliminar backup...");
+      toast.loading(t('dashboard.deleting'));
       
       const { data, error } = await supabase.functions.invoke(
         'backup-delete',
@@ -174,12 +176,12 @@ export default function Dashboard() {
       }
 
       toast.dismiss();
-      toast.success("Backup eliminado com sucesso");
+      toast.success(t('dashboard.deleteSuccess'));
       await fetchData();
     } catch (error) {
       toast.dismiss();
       console.error("Error deleting backup:", error);
-      toast.error("Erro ao eliminar backup. Tente novamente.");
+      toast.error(t('dashboard.deleteError'));
     }
   };
 
@@ -290,13 +292,13 @@ export default function Dashboard() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-            <p className="text-muted-foreground">Gerir os seus backups do Home Assistant</p>
+            <h1 className="text-4xl font-bold mb-2">{t('dashboard.title')}</h1>
+            <p className="text-muted-foreground">{t('dashboard.subtitle')}</p>
           </div>
           <Link to="/api-keys">
             <Button variant="outline" className="gap-2">
               <Key className="w-4 h-4" />
-              Gerir API Keys
+              {t('dashboard.manageApiKeys')}
             </Button>
           </Link>
         </div>
@@ -311,12 +313,12 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <HardDrive className="w-5 h-5 text-primary" />
-                  Armazenamento
+                  {t('dashboard.storage')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold mb-1">{storageUsed.toFixed(2)} GB</div>
-                <p className="text-sm text-muted-foreground">de {storageLimit} GB</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.of')} {storageLimit} GB</p>
               </CardContent>
             </Card>
           </motion.div>
@@ -330,7 +332,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-primary" />
-                  Último Backup
+                  {t('dashboard.lastBackup')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -340,12 +342,12 @@ export default function Dashboard() {
                       {new Date(backups[0].created_at).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      às {new Date(backups[0].created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                      {t('dashboard.at')} {new Date(backups[0].created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </>
                 ) : (
                   <>
-                    <div className="text-2xl font-bold mb-1">Sem backups</div>
+                    <div className="text-2xl font-bold mb-1">{t('dashboard.noBackups')}</div>
                     <p className="text-sm text-muted-foreground">-</p>
                   </>
                 )}
@@ -362,14 +364,14 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-primary" />
-                  Smart Scheduling
+                  {t('dashboard.smartScheduling')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold mb-1">
                   {backups.filter(b => b.backup_trigger === 'pre_update').length}
                 </div>
-                <p className="text-sm text-muted-foreground">Backups Pré-Update</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.preUpdateBackups')}</p>
               </CardContent>
             </Card>
           </motion.div>
@@ -383,15 +385,15 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Webhook className="w-5 h-5 text-primary" />
-                  Webhooks
+                  {t('dashboard.webhooks')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold mb-1">{webhooksCount.active}</div>
-                <p className="text-sm text-muted-foreground mb-3">{webhooksCount.total} configurados</p>
+                <p className="text-sm text-muted-foreground mb-3">{webhooksCount.total} {t('dashboard.configured')}</p>
                 <Link to="/webhooks">
                   <Button variant="outline" size="sm" className="w-full">
-                    Gerir
+                    {t('dashboard.manage')}
                   </Button>
                 </Link>
               </CardContent>
@@ -405,7 +407,7 @@ export default function Dashboard() {
           >
             <Card className="shadow-card hover-scale">
               <CardHeader>
-                <CardTitle>Plano Ativo</CardTitle>
+                <CardTitle>{t('dashboard.activePlan')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold mb-1 capitalize">
@@ -413,15 +415,15 @@ export default function Dashboard() {
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   {isAdmin 
-                    ? 'Permissões de administrador'
-                    : `${backups.length} de ${subscription?.max_backups || 3} backups`
+                    ? t('dashboard.adminPermissions')
+                    : `${backups.length} ${t('dashboard.backupsOf')} ${subscription?.max_backups || 3}`
                   }
                 </p>
                 {!isAdmin && (
                   subscription?.plan === "free" ? (
                     <Link to="/upgrade">
                       <Button variant="hero" size="sm" className="w-full">
-                        Fazer Upgrade
+                        {t('dashboard.upgrade')}
                       </Button>
                     </Link>
                   ) : (
@@ -435,11 +437,11 @@ export default function Dashboard() {
                           if (error) throw error;
                           if (data?.url) window.open(data.url, '_blank');
                         } catch (error) {
-                          toast.error("Erro ao abrir portal de gestão");
+                          toast.error(t('dashboard.loadingError'));
                         }
                       }}
                     >
-                      Gerir Subscrição
+                      {t('dashboard.manageSubscription')}
                     </Button>
                   )
                 )}
@@ -458,22 +460,22 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-primary" />
-                Estatísticas de Backups
+                {t('dashboard.backupStats')}
               </CardTitle>
-              <CardDescription>Visão geral do desempenho</CardDescription>
+              <CardDescription>{t('dashboard.overview')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-6">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-2">Taxa de Sucesso</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t('dashboard.successRate')}</p>
                   <p className="text-3xl font-bold text-primary">{successRate}%</p>
                 </div>
                 <div className="text-center border-x border-border">
-                  <p className="text-sm text-muted-foreground mb-2">Tamanho Médio</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t('dashboard.avgSize')}</p>
                   <p className="text-3xl font-bold">{avgSize} MB</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-2">Crescimento Médio</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t('dashboard.avgGrowth')}</p>
                   <p className={`text-3xl font-bold ${Number(avgGrowth) > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
                     {Number(avgGrowth) > 0 ? '+' : ''}{avgGrowth} MB
                   </p>

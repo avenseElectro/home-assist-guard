@@ -12,13 +12,29 @@ serve(async (req) => {
   }
 
   try {
-    // Get API key from header
+    console.log('[backup-list-api-key] Request received');
+    
+    // Get the API key from the header
     const apiKey = req.headers.get('x-api-key');
+    console.log('[backup-list-api-key] API Key present:', !!apiKey);
+    console.log('[backup-list-api-key] API Key prefix:', apiKey?.substring(0, 4));
     
     if (!apiKey) {
-      console.error('No API key provided');
+      console.error('[backup-list-api-key] No API key provided');
       return new Response(
         JSON.stringify({ error: 'API key required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate API key format
+    if (!apiKey.startsWith('hsb_')) {
+      console.error('[backup-list-api-key] Invalid API key format - must start with hsb_');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid API key format', 
+          details: 'API key must start with hsb_. Please generate a new key from the dashboard.' 
+        }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -53,12 +69,17 @@ serve(async (req) => {
     console.log('Looking for matching API key...');
 
     // Find matching API key by comparing SHA-256 hashes
+    console.log('[backup-list-api-key] Searching for matching key hash...');
     const matchedKey = (apiKeys || []).find(key => key.key_hash === providedKeyHash);
 
     if (!matchedKey) {
-      console.error('Invalid API key');
+      console.error('[backup-list-api-key] Invalid API key - not found in database');
+      console.error('[backup-list-api-key] This might be an old API key. Please generate a new one.');
       return new Response(
-        JSON.stringify({ error: 'Invalid API key' }),
+        JSON.stringify({ 
+          error: 'Invalid API key', 
+          details: 'API key not found. If this is an old key, generate a new one from the dashboard.' 
+        }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
