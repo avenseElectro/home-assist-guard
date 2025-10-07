@@ -30,6 +30,7 @@ serve(async (req) => {
     // Validate API key format
     if (!apiKey.startsWith('hsb_')) {
       console.error('[backup-list-api-key] Invalid API key format - must start with hsb_');
+      console.error('[backup-list-api-key] Received key prefix:', apiKey.substring(0, 10));
       return new Response(
         JSON.stringify({ 
           error: 'Invalid API key format', 
@@ -38,6 +39,8 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log('[backup-list-api-key] API key format valid, length:', apiKey.length);
 
     // Create Supabase client with service role to validate API key
     const supabase = createClient(
@@ -74,11 +77,13 @@ serve(async (req) => {
 
     if (!matchedKey) {
       console.error('[backup-list-api-key] Invalid API key - not found in database');
-      console.error('[backup-list-api-key] This might be an old API key. Please generate a new one.');
+      console.error('[backup-list-api-key] Calculated hash:', providedKeyHash);
+      console.error('[backup-list-api-key] Available hashes:', (apiKeys || []).map(k => k.key_hash.substring(0, 8)).join(', '));
+      console.error('[backup-list-api-key] This might be an old plain-text key. Generate a new one from dashboard.');
       return new Response(
         JSON.stringify({ 
           error: 'Invalid API key', 
-          details: 'API key not found. If this is an old key, generate a new one from the dashboard.' 
+          details: 'API key not found or is an old format. Generate a new key from the dashboard and update your Home Assistant configuration.' 
         }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

@@ -116,15 +116,19 @@ const ApiKeys = () => {
       const { error } = await supabase
         .from("api_keys")
         .update({ revoked_at: new Date().toISOString() })
-        .eq("id", keyId);
+        .eq("id", keyId)
+        .eq("user_id", user!.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("RLS error details:", error);
+        throw error;
+      }
 
       toast.success("API key revogada com sucesso");
       fetchApiKeys();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error revoking API key:", error);
-      toast.error("Erro ao revogar API key");
+      toast.error(`Erro ao revogar: ${error.message || "Erro desconhecido"}`);
     }
   };
 
