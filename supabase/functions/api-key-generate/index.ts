@@ -32,6 +32,7 @@ serve(async (req) => {
   }
 
   try {
+    // Client for authentication
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -65,8 +66,14 @@ serve(async (req) => {
     const apiKey = generateApiKey();
     const hashedKey = await hashApiKey(apiKey);
 
+    // Use service role client to bypass RLS for INSERT
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Store hashed key in database (SECURITY: Never store plain text API keys)
-    const { data: keyData, error: keyError } = await supabase
+    const { data: keyData, error: keyError } = await supabaseAdmin
       .from('api_keys')
       .insert({
         user_id: user.id,
@@ -84,8 +91,8 @@ serve(async (req) => {
       );
     }
 
-    // Log API key creation using secure function
-    await supabase.rpc('insert_backup_log', {
+    // Log API key creation using secure function (use admin client)
+    await supabaseAdmin.rpc('insert_backup_log', {
       _user_id: user.id,
       _action: 'api_key_create',
       _status: 'success',
